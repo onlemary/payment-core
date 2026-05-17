@@ -35,27 +35,10 @@ PAYMENT_DIR="$SCRIPT_DIR"
 PACKAGES_DIR="$(dirname "$PAYMENT_DIR")"
 PROJECT_ROOT="$(dirname "$PACKAGES_DIR")"
 
-# Cargar .env del proyecto raíz
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    source "$PROJECT_ROOT/.env"
-fi
-
-# Cargar .env local si existe
-if [ -f "$PAYMENT_DIR/.env" ]; then
-    source "$PAYMENT_DIR/.env"
-fi
-
-# Cargar .env.payment (configuración específica de payment-core)
-if [ -f "$PAYMENT_DIR/.env.payment" ]; then
+# Cargar gym/.env.secrets (GITHUB_TOKEN centralizado)
+if [ -f "$PROJECT_ROOT/gym/.env.secrets" ]; then
     set -a
-    source <(grep -v '^#' "$PAYMENT_DIR/.env.payment" | grep -v '^$' | sed 's/\r$//')
-    set +a
-fi
-
-# Cargar .env.secrets (tokens, API keys — último para mayor prioridad)
-if [ -f "$PAYMENT_DIR/.env.secrets" ]; then
-    set -a
-    source <(grep -v '^#' "$PAYMENT_DIR/.env.secrets" | grep -v '^$' | sed 's/\r$//')
+    source <(grep -v '^#' "$PROJECT_ROOT/gym/.env.secrets" | grep -v '^$' | sed 's/\r$//')
     set +a
 fi
 
