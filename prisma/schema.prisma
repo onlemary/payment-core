@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PAYMENT_CORE_DB_URL")
+}
+
+model OAuthToken {
+  userId       BigInt   @id @map("user_id")
+  orgSlug      String   @map("org_slug") @db.VarChar(255)
+  accessToken  String   @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  expiresAt    DateTime? @map("expires_at")
+  connectedAt  DateTime? @map("connected_at")
+  publicKey    String?  @map("public_key")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("oauth_tokens")
+}
+
+model TransferIntent {
+  id           String   @id @default(uuid())
+  orgSlug      String   @map("org_slug") @db.VarChar(255)
+  transferCode String   @unique @map("transfer_code")
+  amount       Int
+  currency     String   @default("ARS")
+  invoiceIds   Json     @map("invoice_ids")
+  status       String   @default("pending")
+  matchedAt    DateTime? @map("matched_at")
+  transferId   String?  @map("transfer_id")
+  expiresAt    DateTime? @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  metadata     Json?
+
+  @@index([orgSlug])
+  @@map("transfer_intents")
+}
+
+model PendingTransfer {
+  id        String   @id @default(uuid())
+  orgSlug   String   @map("org_slug") @db.VarChar(255)
+  transferId String  @map("transfer_id")
+  amount    Int
+  currency  String   @default("ARS")
+  concept   String?
+  status    String   @default("unassigned")
+  receivedAt DateTime @default(now()) @map("received_at")
+  assignedBy String?  @map("assigned_by")
+  assignedAt DateTime? @map("assigned_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([orgSlug])
+  @@map("pending_transfers")
+}
+
+model MpUserOrg {
+  mpUserId  BigInt   @id @map("mp_user_id")
+  orgSlug   String   @map("org_slug") @db.VarChar(255)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("mp_user_orgs")
+}
+
+model CheckoutSession {
+  sessionId  String   @id @map("session_id")
+  paymentId  String   @map("payment_id")
+  orgSlug    String   @map("org_slug") @db.VarChar(255)
+  provider   String   @default("mercadopago")
+  invoiceIds Json     @map("invoice_ids")
+  amount     Decimal  @db.Decimal(10, 2)
+  currency   String   @default("ARS")
+  status     String   @default("created")
+  createdAt  DateTime @default(now()) @map("created_at")
+  expiresAt  DateTime? @map("expires_at")
+
+  @@index([paymentId])
+  @@index([orgSlug])
+  @@map("checkout_sessions")
+}

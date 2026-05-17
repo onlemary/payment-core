@@ -1,0 +1,171 @@
+{
+  "name": "@onlemary/payment-core",
+  "version": "0.4.2",
+  "description": "Multi-gateway payment processing package with unified abstraction for MercadoPago, Stripe, PayPal, and more",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    },
+    "./react/adapters": {
+      "types": "./dist/react/adapters/index.d.ts",
+      "import": "./dist/react/adapters/index.js"
+    },
+    "./react/oauth/mercadopago": {
+      "types": "./dist/react/oauth/mercadopago/index.d.ts",
+      "import": "./dist/react/oauth/mercadopago/index.js"
+    },
+    "./payments": {
+      "types": "./dist/universal/payments/index.d.ts",
+      "import": "./dist/universal/payments/index.js"
+    },
+    "./refunds": {
+      "types": "./dist/universal/refunds/index.d.ts",
+      "import": "./dist/universal/refunds/index.js"
+    },
+    "./captures": {
+      "types": "./dist/universal/captures/index.d.ts",
+      "import": "./dist/universal/captures/index.js"
+    },
+    "./voids": {
+      "types": "./dist/universal/voids/index.d.ts",
+      "import": "./dist/universal/voids/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "import": "./dist/storage/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.js"
+    },
+    "./providers/mercadopago": {
+      "types": "./dist/providers/mercadopago/index.d.ts",
+      "import": "./dist/providers/mercadopago/index.js"
+    },
+    "./providers/stripe": {
+      "types": "./dist/providers/stripe/index.d.ts",
+      "import": "./dist/providers/stripe/index.js"
+    },
+    "./providers/paypal": {
+      "types": "./dist/providers/paypal/index.d.ts",
+      "import": "./dist/providers/paypal/index.js"
+    },
+    "./webhooks": {
+      "types": "./dist/webhooks/index.d.ts",
+      "import": "./dist/webhooks/index.js"
+    },
+    "./routes": {
+      "types": "./dist/routes/index.d.ts",
+      "import": "./dist/routes/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "import": "./dist/errors/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js"
+    },
+    "./logging": {
+      "types": "./dist/logging/index.d.ts",
+      "import": "./dist/logging/index.js"
+    },
+    "./health": {
+      "types": "./dist/health/index.d.ts",
+      "import": "./dist/health/index.js"
+    },
+    "./react/payment-methods": {
+      "types": "./dist/react/payment-methods/index.d.ts",
+      "import": "./dist/react/payment-methods/index.js"
+    },
+    "./react/payment-history": {
+      "types": "./dist/react/payment-history/index.d.ts",
+      "import": "./dist/react/payment-history/index.js"
+    },
+    "./react/empty-states": {
+      "types": "./dist/react/empty-states/index.d.ts",
+      "import": "./dist/react/empty-states/index.js"
+    },
+    "./react/errors": {
+      "types": "./dist/react/errors/index.d.ts",
+      "import": "./dist/react/errors/index.js"
+    },
+    "./react/card-form": {
+      "types": "./dist/react/card-form/index.d.ts",
+      "import": "./dist/react/card-form/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && npx prisma generate",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "postinstall": "sh scripts/postinstall.sh",
+    "prepublishOnly": "npm run build && npm test",
+    "dev:publish": "bash dev-publish.sh"
+  },
+  "keywords": [
+    "payment",
+    "mercadopago",
+    "stripe",
+    "paypal",
+    "multi-gateway",
+    "oauth",
+    "marketplace",
+    "split-payments",
+    "webhooks"
+  ],
+  "author": "onlemary",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/onlemary/payment-core.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "dependencies": {
+    "mercadopago": "^2.0.0",
+    "stripe": "^14.0.0",
+    "@prisma/client": "^6.0.0"
+  },
+  "peerDependencies": {
+    "lucide-react": "^1.14.0",
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^14.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "fast-check": "^3.0.0",
+    "happy-dom": "^20.9.0",
+    "jsdom": "^29.1.0",
+    "lucide-react": "^1.14.0",
+    "prisma": "^6.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
