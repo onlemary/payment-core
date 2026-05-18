@@ -1,6 +1,6 @@
 {
   "name": "@onlemary/payment-core",
-  "version": "0.4.3",
+  "version": "0.4.6",
   "description": "Multi-gateway payment processing package with unified abstraction for MercadoPago, Stripe, PayPal, and more",
   "type": "module",
   "main": "./dist/index.js",
@@ -106,12 +106,13 @@
   },
   "files": [
     "dist",
+    "prisma",
     "scripts",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc && npx prisma generate",
+    "build": "npx prisma generate && tsc",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

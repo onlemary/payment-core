@@ -2,7 +2,7 @@
 // Configurable PrismaClient singleton.
 // Uses PAYMENT_CORE_DB_URL env var if DATABASE_URL is not set.
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../dist/.prisma/client/index.js'
 
 let client: PrismaClient | null = null
 
