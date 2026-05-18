@@ -1,12 +1,13 @@
 /**
  * postinstall — corre automáticamente después de npm install.
- * Si PAYMENT_CORE_DB_URL está definida → ejecuta prisma db push (crea tablas).
- * Si NO está definida → muestra aviso, no bloquea la instalación.
+ * Crea la database si no existe y sincroniza el schema.
+ * Idempotente: la segunda vez no hace nada.
  */
 
 import { execSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { PrismaClient } from '../dist/.prisma/client/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -34,10 +35,35 @@ function maskUrl(u: string) {
   return u.replace(/:\/\/.*@/, '://<credentials>@')
 }
 
-console.log(`[@onlemary/payment-core] Sincronizando DB: ${maskUrl(url)}`)
+const dbName = url.split('/').pop()?.split('?')[0] || 'payment_core'
+const maintenanceUrl = url.replace(/\/[^/?]+(?=\?|$)/, '/postgres')
+
+console.log(`[@onlemary/payment-core] Verificando DB: ${maskUrl(url)}`)
+
+// 1. Crear database si no existe
+const maintenanceClient = new PrismaClient({
+  datasources: { db: { url: maintenanceUrl } },
+})
 
 try {
-  // Prisma db push sincroniza el schema con la DB (crea tablas si no existen)
+  await maintenanceClient.$connect()
+  await maintenanceClient.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`)
+  console.log(`[@onlemary/payment-core] Database ${dbName} creada`)
+} catch (err: unknown) {
+  const message = err instanceof Error ? err.message : String(err)
+  if (message.includes('already exists')) {
+    console.log(`[@onlemary/payment-core] Database ${dbName} ya existe`)
+  } else {
+    console.error(`[@onlemary/payment-core] Error al crear database:`, message)
+    await maintenanceClient.$disconnect()
+    process.exit(1)
+  }
+} finally {
+  await maintenanceClient.$disconnect()
+}
+
+// 2. Sincronizar schema (crea tablas si no existen)
+try {
   execSync('npx prisma db push --skip-generate --accept-data-loss', {
     cwd: join(__dirname, '..'),
     env: { ...process.env, DATABASE_URL: url },
