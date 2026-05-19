@@ -7,6 +7,7 @@ import type {
  PayPalOAuthAPI,
 } from './types.js'
 import { PaymentClientBase, type PaymentClientBaseConfig } from './client-base.js'
+import { validatePaymentEnv } from './config/validate.js'
 
 /**
  * Provider configuration for OAuth client
@@ -76,10 +77,14 @@ export class PaymentClientOAuth extends PaymentClientBase {
  private autoRefreshTokens: boolean
  private refreshMarginSeconds: number
 
- constructor(config: PaymentClientOAuthConfig) {
- super(config)
+  constructor(config: PaymentClientOAuthConfig) {
+    super(config)
 
- this.autoRefreshTokens = config.options?.autoRefreshTokens ?? true
+    // ── Validate ENV vars (fail fast) ───────────────────────────────────
+    // Alinea con notifier-core: el constructor valida env vars automáticamente.
+    validatePaymentEnv()
+
+    this.autoRefreshTokens = config.options?.autoRefreshTokens ?? true
  this.refreshMarginSeconds = config.options?.refreshMarginSeconds ?? 300
 
  // Register configured providers WITHOUT accessToken

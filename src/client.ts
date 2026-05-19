@@ -25,6 +25,7 @@ import { createWebhookHandler } from './webhooks/handler.js'
 import { PaymentAttemptLogger } from './logging/PaymentAttemptLogger.js'
 import type { PaymentAttemptLog } from './logging/types.js'
 import { loadLoggingConfig } from './config/logging.js'
+import { validatePaymentEnv } from './config/validate.js'
 
 /**
  * PaymentClient — full-featured payment client
@@ -77,6 +78,10 @@ export class PaymentClient extends PaymentClientBase implements IPaymentClient {
 
   constructor(config: PaymentClientConfig) {
     super(config)
+
+    // ── Validate ENV vars (fail fast) ───────────────────────────────────
+    // Alinea con notifier-core: el constructor valida env vars automáticamente.
+    validatePaymentEnv()
 
     // Initialize idempotency service with config from ENV
     const idempotencyConfig = loadIdempotencyConfigFromEnv()
