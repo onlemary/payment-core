@@ -32,7 +32,17 @@ const RETRY_ENV = {
   PAYMENT_RETRY_MAX_DELAY_MS: '5000',
 }
 
-const ALL_ENV = { ...CB_ENV, ...IDEMPOTENCY_ENV, ...RATE_LIMITER_ENV, ...RETRY_ENV }
+// Payment Core ENV vars — required by validatePaymentEnv() in constructor
+const PAYMENT_ENV = {
+  PAYMENT_CORE_DB_URL: 'postgresql://test:test@localhost:5432/test',
+  PAYMENT_MP_OAUTH_TEST_MODE: 'true',
+  MERCADOPAGO_CLIENT_ID: 'test_client_id',
+  MERCADOPAGO_CLIENT_SECRET: 'test_client_secret',
+  MERCADOPAGO_WEBHOOK_SECRET: 'test_webhook_secret',
+  NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY: 'TEST-xxxx-xxxx',
+}
+
+const ALL_ENV = { ...CB_ENV, ...IDEMPOTENCY_ENV, ...RATE_LIMITER_ENV, ...RETRY_ENV, ...PAYMENT_ENV }
 
 describe('PaymentClient', () => {
   beforeEach(() => {
