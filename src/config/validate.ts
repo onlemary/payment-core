@@ -23,7 +23,7 @@
  * - MERCADOPAGO_CLIENT_ID: OAuth client ID for marketplace
  * - MERCADOPAGO_CLIENT_SECRET: OAuth client secret for marketplace
  * 
- * @throws Process exits with code 1 if any variable is missing
+ * @throws Error if any variable is missing
  */
 export function validatePaymentEnv(): void {
   const required = [
@@ -43,13 +43,11 @@ export function validatePaymentEnv(): void {
   const missing = required.filter(key => !process.env[key])
   
   if (missing.length > 0) {
-    console.error('❌ Missing required PAYMENT environment variables:')
-    missing.forEach(key => {
-      console.error(`   - ${key}`)
-    })
-    console.error('')
-    console.error('These variables are required by @onlemary/payment-core.')
-    console.error('Check your .env files for configuration.')
-    process.exit(1)
+    throw new Error(
+      `@onlemary/payment-core: missing required environment variables:\n` +
+      missing.map(k => `  - ${k}`).join('\n') +
+      `\n\nCheck your .env files for configuration.\n` +
+      `See .env.payment.example for a complete reference.`
+    )
   }
 }

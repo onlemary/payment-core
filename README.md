@@ -163,7 +163,7 @@ PAYMENT_CB_HALF_OPEN_REQUESTS=3          # Number of test requests in half-open 
 
 ### Example Configuration
 
-See [`.env.example`](./.env.example) for a complete example with all available variables.
+See [`.env.payment.example`](./.env.payment.example) for a complete example with all available variables.
 
 ---
 

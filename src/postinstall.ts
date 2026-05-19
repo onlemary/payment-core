@@ -92,11 +92,18 @@ if (!url) {
 ╠══════════════════════════════════════════════════════════════╣
 ║  No se encontró PAYMENT_CORE_DB_URL (ni .env.payment).      ║
 ║                                                              ║
-║  La DB no se configuró automáticamente.                     ║
-║  Configurá la variable y reinstalá, o ejecutá manualmente:  ║
-║    npx prisma db push                                        ║
+║  ▶ Solución rápida:                                          ║
+║    1. Copiá .env.payment.example → .env.payment             ║
+║    2. Completá tus valores                                   ║
+║    3. Reinstalá el paquete                                    ║
 ║                                                              ║
-║  La app va a fallar al arrancar si falta esta variable.      ║
+║  ▶ También podés ejecutar manualmente:                       ║
+║    npx prisma db push --schema=node_modules/@onlemary/       ║
+║    payment-core/prisma/schema.prisma                         ║
+║                                                              ║
+║  ⚠️ PAYMENT_CORE_DB_URL es obligatoria. Sin ella, el        ║
+║    validador @onlemary/payment-core va a THROW al           ║
+║    instanciar un PaymentClient (fail-fast en constructor).  ║
 ╚══════════════════════════════════════════════════════════════╝
 `)
   process.exit(0)
