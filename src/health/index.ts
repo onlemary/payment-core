@@ -146,6 +146,39 @@ export async function runHealthCheck(
     }
   }
   
+  // ── Config flags check (siempre activo) ──────────────────────────
+  const configFlags: Array<{
+    key: string
+    value: string | boolean
+    severity: 'info' | 'warning' | 'error'
+    hint: string
+  }> = []
+
+  // 1. PAYMENT_MP_OAUTH_TEST_MODE
+  const testMode = process.env.PAYMENT_MP_OAUTH_TEST_MODE === 'true'
+  if (testMode) {
+    configFlags.push({
+      key: 'PAYMENT_MP_OAUTH_TEST_MODE',
+      value: true,
+      severity: 'warning',
+      hint: 'OAuth devolverá tokens TEST-xxx. NO usar en producción.',
+    })
+  }
+
+  // Future flags can be added here
+
+  const hasConfigError = configFlags.some(f => f.severity === 'error')
+  const hasConfigWarning = configFlags.some(f => f.severity === 'warning')
+  checks.config = {
+    status: hasConfigError ? 'fail' : hasConfigWarning ? 'warn' : 'pass',
+    message: hasConfigError
+      ? 'Configuration flags with errors detected'
+      : hasConfigWarning
+        ? 'Configuration flags may affect behavior'
+        : 'All configuration flags are nominal',
+    details: { flags: configFlags },
+  }
+
   // Determine overall status
   const statuses = Object.values(checks).map(check => check.status)
   const hasFail = statuses.includes('fail')

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { validatePaymentEnvironment, detectActiveProviders } from '../../src/health/environment.js'
+import { runHealthCheck } from '../../src/health/index.js'
 
 describe('validatePaymentEnvironment', () => {
   beforeEach(() => {
@@ -30,6 +31,103 @@ describe('validatePaymentEnvironment', () => {
     expect(result.timestamp).toBeInstanceOf(Date)
 
     process.env = originalEnv
+  })
+})
+
+describe('runHealthCheck config check', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('reports pass when PAYMENT_MP_OAUTH_TEST_MODE is not set', async () => {
+    delete process.env.PAYMENT_MP_OAUTH_TEST_MODE
+
+    const mockClient = {
+      storage: {},
+      config: {
+        providers: {
+          mercadopago: {
+            credentials: {
+              clientId: '12345',
+              clientSecret: 'secret123',
+            },
+          },
+        },
+      },
+    } as any
+
+    const result = await runHealthCheck(mockClient, {
+      checkStorage: false,
+      checkCredentials: false,
+      checkConnectivity: false,
+    })
+
+    expect(result.checks.config).toBeDefined()
+    expect(result.checks.config.status).toBe('pass')
+    expect(result.checks.config.details?.flags).toEqual([])
+  })
+
+  it('reports warn when PAYMENT_MP_OAUTH_TEST_MODE is true', async () => {
+    process.env.PAYMENT_MP_OAUTH_TEST_MODE = 'true'
+
+    const mockClient = {
+      storage: {},
+      config: {
+        providers: {
+          mercadopago: {
+            credentials: {
+              clientId: '12345',
+              clientSecret: 'secret123',
+            },
+          },
+        },
+      },
+    } as any
+
+    const result = await runHealthCheck(mockClient, {
+      checkStorage: false,
+      checkCredentials: false,
+      checkConnectivity: false,
+    })
+
+    expect(result.checks.config).toBeDefined()
+    expect(result.checks.config.status).toBe('warn')
+    expect(result.checks.config.details?.flags).toHaveLength(1)
+    expect(result.checks.config.details?.flags[0].key).toBe('PAYMENT_MP_OAUTH_TEST_MODE')
+    expect(result.checks.config.details?.flags[0].value).toBe(true)
+    expect(result.status).toBe('degraded')
+
+    delete process.env.PAYMENT_MP_OAUTH_TEST_MODE
+  })
+
+  it('reports pass when PAYMENT_MP_OAUTH_TEST_MODE is false', async () => {
+    process.env.PAYMENT_MP_OAUTH_TEST_MODE = 'false'
+
+    const mockClient = {
+      storage: {},
+      config: {
+        providers: {
+          mercadopago: {
+            credentials: {
+              clientId: '12345',
+              clientSecret: 'secret123',
+            },
+          },
+        },
+      },
+    } as any
+
+    const result = await runHealthCheck(mockClient, {
+      checkStorage: false,
+      checkCredentials: false,
+      checkConnectivity: false,
+    })
+
+    expect(result.checks.config).toBeDefined()
+    expect(result.checks.config.status).toBe('pass')
+    expect(result.checks.config.details?.flags).toEqual([])
+
+    delete process.env.PAYMENT_MP_OAUTH_TEST_MODE
   })
 })
 
