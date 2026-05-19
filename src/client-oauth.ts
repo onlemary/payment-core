@@ -39,6 +39,8 @@ export interface PaymentClientOAuthConfig extends PaymentClientBaseConfig {
  autoRefreshTokens?: boolean
  /** Margin in seconds before token expiry to trigger refresh */
  refreshMarginSeconds?: number
+ /** OAuth test mode — when true, sends test_token:true to get TEST- tokens */
+ oauthTestMode?: boolean
  }
 }
 
@@ -86,6 +88,7 @@ export class PaymentClientOAuth extends PaymentClientBase {
 
     this.autoRefreshTokens = config.options?.autoRefreshTokens ?? true
  this.refreshMarginSeconds = config.options?.refreshMarginSeconds ?? 300
+ const oauthTestMode = config.options?.oauthTestMode ?? false
 
  // Register configured providers WITHOUT accessToken
  if (config.providers.mercadopago) {
@@ -100,6 +103,7 @@ export class PaymentClientOAuth extends PaymentClientBase {
  autoRefreshTokens: this.autoRefreshTokens,
  refreshMarginSeconds: this.refreshMarginSeconds,
  logger: this.logger,
+ oauthTestMode,
  },
  }, this.storage)
  }
