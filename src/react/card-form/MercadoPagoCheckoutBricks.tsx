@@ -46,6 +46,9 @@ export interface MercadoPagoCheckoutBricksProps {
  /** Currency code */
  currency: string
  
+ /** Payer email (optional - if provided, email field will be hidden and pre-filled) */
+ payerEmail?: string
+ 
  /** Success callback with token */
  onSuccess: (result: {
  token: string
@@ -116,6 +119,7 @@ export function MercadoPagoCheckoutBricks({
   publicKey,
   amount,
   currency,
+  payerEmail,
   onSuccess,
   onError,
   onLoadingChange,
@@ -185,6 +189,11 @@ export function MercadoPagoCheckoutBricks({
         const cardPaymentBrick = await bricksBuilder.create('cardPayment', containerId, {
           initialization: {
             amount: amount / 100, // Convert cents to decimal
+            ...(payerEmail && {
+              payer: {
+                email: payerEmail,
+              },
+            }),
           },
           customization: {
             visual: {

@@ -137,6 +137,12 @@ PAYMENT_CORE_DB_URL=postgresql://user:password@localhost:5432/payment_core
 MERCADOPAGO_CLIENT_ID=your_client_id
 MERCADOPAGO_CLIENT_SECRET=your_client_secret
 MERCADOPAGO_WEBHOOK_SECRET=your_webhook_secret
+
+# MercadoPago OAuth Test Mode
+# true → sends test_token:true to POST /oauth/token, getting TEST-xxx tokens
+# false → gets APP_USR-xxx tokens (production)
+# Required. Set true in development, false in production.
+PAYMENT_MP_OAUTH_TEST_MODE=false
 ```
 
 ### Optional

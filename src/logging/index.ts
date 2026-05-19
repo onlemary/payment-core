@@ -106,3 +106,15 @@ export function createLogger(logger?: Logger | null): Logger {
   if (logger) return logger
   return new NullLogger()
 }
+
+// ─── Payment Attempt Logging ────────────────────────────────────
+
+export { PaymentAttemptLogger } from './PaymentAttemptLogger.js'
+export { validateLoggingSystem, LoggingMonitor } from './healthCheck.js'
+export type {
+  PaymentAttemptLog,
+  PaymentAttemptLoggerConfig,
+  PaymentAttemptLoggerInterface,
+  PaymentAttemptLoggerHealthResult,
+  PaymentAttemptLoggerMetrics
+} from './types.js'

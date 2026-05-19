@@ -1,6 +1,4 @@
 #!/bin/sh
-# Solo corre cuando el paquete se instala como dependencia de otro proyecto
-# (no cuando se hace npm install dentro de payment-core mismo)
-if [ "$INIT_CWD" != "$PWD" ]; then
-  node dist/postinstall.js
-fi
+# Corre siempre: postinstall crea la base de datos si no existe.
+# Idempotente: si la DB ya existe, no hace nada.
+node dist/postinstall.js

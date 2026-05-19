@@ -16,6 +16,7 @@ import type { IdempotencyService } from '../idempotency/service.js'
 import { generateIdempotencyKey } from '../idempotency/service.js'
 import type { RateLimiterService } from '../rate-limiter/service.js'
 import type { RetryService } from '../retry/service.js'
+import type { PaymentAttemptLogger } from '../logging/PaymentAttemptLogger.js'
 
 /**
  * UniversalPayments — gateway-agnostic payment creation.
@@ -30,6 +31,7 @@ export class UniversalPayments implements IUniversalPayments {
   private rateLimiter: RateLimiterService | null
   private retry: RetryService | null
   private tenantId: string | null
+  private attemptLogger: PaymentAttemptLogger | null
 
   constructor(
     loader: ProviderLoader,
@@ -39,6 +41,7 @@ export class UniversalPayments implements IUniversalPayments {
     rateLimiter?: RateLimiterService,
     retry?: RetryService,
     tenantId?: string,
+    attemptLogger?: PaymentAttemptLogger,
   ) {
     this.loader = loader
     this.storage = storage
@@ -47,12 +50,78 @@ export class UniversalPayments implements IUniversalPayments {
     this.rateLimiter = rateLimiter ?? null
     this.retry = retry ?? null
     this.tenantId = tenantId ?? null
+    this.attemptLogger = attemptLogger ?? null
   }
 
   async create(request: UniversalPaymentRequest): Promise<PaymentResult> {
+    // Start logging attempt (or reuse existing one)
+    let attemptId: string | null = null
+    if (request.existingAttemptId) {
+      // Reuse existing attempt from upstream (e.g. route-level validation logging)
+      attemptId = request.existingAttemptId
+      if (this.attemptLogger) {
+        try {
+          await this.attemptLogger.updateAttempt(attemptId, {
+            status: 'started',
+            paymentMethodId: request.paymentMethod.type === 'mercadopago'
+              ? (request.paymentMethod as MPPaymentMethodData).paymentMethodId
+              : request.paymentMethod.type,
+            installments: request.paymentMethod.type === 'mercadopago'
+              ? (request.paymentMethod as MPPaymentMethodData).installments
+              : undefined,
+            provider: request.provider ?? request.paymentMethod.type,
+          })
+        } catch (logError) {
+          this.logger?.warn('Failed to update existing payment attempt log', {
+            attemptId,
+            error: logError instanceof Error ? logError.message : String(logError)
+          })
+        }
+      }
+    } else if (this.attemptLogger) {
+      try {
+        attemptId = await this.attemptLogger.logAttempt({
+          orgSlug: request.metadata?.orgSlug || '',
+          clienteId: request.metadata?.clienteId || '',
+          amount: request.amount,
+          currency: request.currency,
+          paymentMethodId: request.paymentMethod.type === 'mercadopago' 
+            ? (request.paymentMethod as MPPaymentMethodData).paymentMethodId 
+            : request.paymentMethod.type,
+          installments: request.paymentMethod.type === 'mercadopago' 
+            ? (request.paymentMethod as MPPaymentMethodData).installments 
+            : undefined,
+          cardLastDigits: request.metadata?.cardLastDigits,
+          cardBrand: request.metadata?.cardBrand,
+          provider: request.provider ?? request.paymentMethod.type,
+        })
+      } catch (logError) {
+        // Logging errors should not fail the payment
+        this.logger?.warn('Failed to start payment attempt logging', {
+          error: logError instanceof Error ? logError.message : String(logError)
+        })
+      }
+    }
+
     // Validate required fields
     const validationError = this.validate(request)
     if (validationError) {
+      // Update attempt log with validation error
+      if (attemptId && this.attemptLogger) {
+        try {
+          await this.attemptLogger.updateAttempt(attemptId, {
+            status: 'failed',
+            error: validationError,
+            errorType: 'validation_error'
+          })
+        } catch (logError) {
+          this.logger?.warn('Failed to update payment attempt log', {
+            attemptId,
+            error: logError instanceof Error ? logError.message : String(logError)
+          })
+        }
+      }
+
       return {
         success: false,
         error: validationError,
@@ -67,6 +136,22 @@ export class UniversalPayments implements IUniversalPayments {
     // Validate marketplace fields
     if (request.applicationFee !== undefined) {
       if (!request.sellerId) {
+        // Update attempt log with validation error
+        if (attemptId && this.attemptLogger) {
+          try {
+            await this.attemptLogger.updateAttempt(attemptId, {
+              status: 'failed',
+              error: 'sellerId is required when applicationFee is specified',
+              errorType: 'validation_error'
+            })
+          } catch (logError) {
+            this.logger?.warn('Failed to update payment attempt log', {
+              attemptId,
+              error: logError instanceof Error ? logError.message : String(logError)
+            })
+          }
+        }
+
         return {
           success: false,
           error: 'sellerId is required when applicationFee is specified',
@@ -75,6 +160,22 @@ export class UniversalPayments implements IUniversalPayments {
         }
       }
       if (request.applicationFee <= 0) {
+        // Update attempt log with validation error
+        if (attemptId && this.attemptLogger) {
+          try {
+            await this.attemptLogger.updateAttempt(attemptId, {
+              status: 'failed',
+              error: 'applicationFee must be greater than zero',
+              errorType: 'validation_error'
+            })
+          } catch (logError) {
+            this.logger?.warn('Failed to update payment attempt log', {
+              attemptId,
+              error: logError instanceof Error ? logError.message : String(logError)
+            })
+          }
+        }
+
         return {
           success: false,
           error: 'applicationFee must be greater than zero',
@@ -83,6 +184,22 @@ export class UniversalPayments implements IUniversalPayments {
         }
       }
       if (request.applicationFee >= request.amount) {
+        // Update attempt log with validation error
+        if (attemptId && this.attemptLogger) {
+          try {
+            await this.attemptLogger.updateAttempt(attemptId, {
+              status: 'failed',
+              error: 'applicationFee must be less than the payment amount',
+              errorType: 'validation_error'
+            })
+          } catch (logError) {
+            this.logger?.warn('Failed to update payment attempt log', {
+              attemptId,
+              error: logError instanceof Error ? logError.message : String(logError)
+            })
+          }
+        }
+
         return {
           success: false,
           error: 'applicationFee must be less than the payment amount',
@@ -94,6 +211,22 @@ export class UniversalPayments implements IUniversalPayments {
 
     // Check if provider supports the operation
     if (!this.loader.isProviderConfigured(providerName)) {
+      // Update attempt log with provider error
+      if (attemptId && this.attemptLogger) {
+        try {
+          await this.attemptLogger.updateAttempt(attemptId, {
+            status: 'failed',
+            error: `Provider "${providerName}" is not configured`,
+            errorType: 'server_error'
+          })
+        } catch (logError) {
+          this.logger?.warn('Failed to update payment attempt log', {
+            attemptId,
+            error: logError instanceof Error ? logError.message : String(logError)
+          })
+        }
+      }
+
       return {
         success: false,
         error: `Provider "${providerName}" is not configured`,
@@ -166,6 +299,28 @@ export class UniversalPayments implements IUniversalPayments {
           const provider = await this.loader.getProvider(providerName)
           const result = await provider.createPayment(request)
 
+          // Update attempt log with result
+          if (attemptId && this.attemptLogger) {
+            try {
+              await this.attemptLogger.updateAttempt(attemptId, {
+                paymentId: result.paymentId,
+                paymentStatus: result.status,
+                paymentStatusDetail: result.statusDetail,
+                provider: result.provider,
+                status: result.success ? 
+                  (result.status === 'approved' ? 'success' : 'pending') : 
+                  'failed',
+                error: result.success ? undefined : result.error,
+                errorType: result.success ? undefined : 'payment_rejected'
+              })
+            } catch (logError) {
+              this.logger?.warn('Failed to update payment attempt log', {
+                attemptId,
+                error: logError instanceof Error ? logError.message : String(logError)
+              })
+            }
+          }
+
           // Save paymentId→provider mapping after successful creation
           if (result.success && result.paymentId && this.storage) {
             await this.storage.saveProviderMapping(result.paymentId, providerName)
@@ -185,6 +340,24 @@ export class UniversalPayments implements IUniversalPayments {
           return result
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error)
+          
+          // Update attempt log with error
+          if (attemptId && this.attemptLogger) {
+            try {
+              await this.attemptLogger.updateAttempt(attemptId, {
+                status: 'failed',
+                error: errorMsg,
+                errorType: 'server_error',
+                errorStack: error instanceof Error ? error.stack : undefined
+              })
+            } catch (logError) {
+              this.logger?.warn('Failed to update payment attempt log', {
+                attemptId,
+                error: logError instanceof Error ? logError.message : String(logError)
+              })
+            }
+          }
+
           this.loader.recordFailure(providerName, errorMsg)
           this.logger?.error('Payment creation failed', { provider: providerName, error: errorMsg })
           return {
@@ -227,6 +400,22 @@ export class UniversalPayments implements IUniversalPayments {
     if (this.rateLimiter) {
       const allowed = await this.rateLimiter.acquire(providerName)
       if (!allowed) {
+        // Update attempt log with rate limit error
+        if (attemptId && this.attemptLogger) {
+          try {
+            await this.attemptLogger.updateAttempt(attemptId, {
+              status: 'failed',
+              error: `Rate limit exceeded for provider "${providerName}". Try again later.`,
+              errorType: 'server_error'
+            })
+          } catch (logError) {
+            this.logger?.warn('Failed to update payment attempt log', {
+              attemptId,
+              error: logError instanceof Error ? logError.message : String(logError)
+            })
+          }
+        }
+
         return {
           success: false,
           error: `Rate limit exceeded for provider "${providerName}". Try again later.`,

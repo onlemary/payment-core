@@ -35,6 +35,9 @@ export function validatePaymentEnv(): void {
     'NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY',
     'MERCADOPAGO_CLIENT_ID',
     'MERCADOPAGO_CLIENT_SECRET',
+    
+    // OAuth Test Mode (obligatorio — controla si se envía test_token: true al hacer OAuth)
+    'PAYMENT_MP_OAUTH_TEST_MODE',
   ]
   
   const missing = required.filter(key => !process.env[key])

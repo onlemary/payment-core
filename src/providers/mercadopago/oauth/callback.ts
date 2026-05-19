@@ -8,6 +8,9 @@ import type { TokenStorage } from '../../../storage/types.js'
  * Exchanges an OAuth authorization code for access/refresh tokens,
  * then immediately performs a refresh_token grant to obtain public_key.
  *
+ * When testToken is true, sends test_token: true to get TEST- tokens (sandbox).
+ * When false or omitted, gets APP_USR- tokens (production).
+ *
  * Why two steps?
  * - authorization_code grant → returns access_token + refresh_token (NO public_key)
  * - refresh_token grant → returns access_token + refresh_token + public_key
@@ -26,7 +29,8 @@ export async function handleCallback(
  sellerId: string,
  redirectUri: string,
  storage: TokenStorage,
- logger?: Logger | null
+ logger?: Logger | null,
+ testToken?: boolean
 ): Promise<SellerTokens> {
  // ── Step 1: Exchange authorization code for tokens ──
  logger?.info('OAuth: exchanging authorization code', { sellerId })
@@ -40,6 +44,7 @@ export async function handleCallback(
  client_secret: clientSecret,
  code,
  redirect_uri: redirectUri,
+ ...(testToken ? { test_token: true } : {}),
  }),
  })
 
@@ -72,6 +77,7 @@ export async function handleCallback(
  client_id: clientId,
  client_secret: clientSecret,
  refresh_token: authData.refresh_token,
+ ...(testToken ? { test_token: true } : {}),
  }),
  })
 

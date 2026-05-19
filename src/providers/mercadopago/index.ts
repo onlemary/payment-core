@@ -53,6 +53,7 @@ export default class MercadoPagoProvider implements PaymentProvider {
  private logger: Logger | null = null
  private autoRefresh = true
  private refreshMarginSeconds = 300
+ private oauthTestMode = false
 
  async initialize(config: ProviderConfig, storage?: TokenStorage): Promise<void> {
  this.accessToken = config.credentials.accessToken ?? ''
@@ -63,16 +64,18 @@ export default class MercadoPagoProvider implements PaymentProvider {
  this.logger = (config.options?.logger as Logger) ?? null
  this.autoRefresh = (config.options?.autoRefreshTokens as boolean) ?? true
  this.refreshMarginSeconds = (config.options?.refreshMarginSeconds as number) ?? 300
+ this.oauthTestMode = (config.options?.oauthTestMode as boolean) ?? false
 
- if (this.storage) {
- this.sellerManager = new SellerManager(
- this.storage,
- this.clientId,
- this.clientSecret,
- this.logger,
- this.autoRefresh,
- this.refreshMarginSeconds
- )
+    if (this.storage) {
+      this.sellerManager = new SellerManager(
+        this.storage,
+        this.clientId,
+        this.clientSecret,
+        this.logger,
+        this.autoRefresh,
+        this.refreshMarginSeconds,
+        this.oauthTestMode
+      )
  } else {
  this.logger?.warn('MercadoPago: no storage provided, SellerManager not created')
  }
@@ -214,10 +217,9 @@ export default class MercadoPagoProvider implements PaymentProvider {
  oauth: {
  getConnectUrl: (sellerId: string, redirectUri: string) => {
  return getConnectUrl(this.clientId, sellerId, redirectUri)
- },
- handleCallback: (code: string, sellerId: string, redirectUri: string) => {
- return handleCallback(this.clientId, this.clientSecret, code, sellerId, redirectUri, storage, this.logger)
- },
+ },          handleCallback: (code: string, sellerId: string, redirectUri: string) => {
+            return handleCallback(this.clientId, this.clientSecret, code, sellerId, redirectUri, storage, this.logger, this.oauthTestMode)
+          },
  disconnect: (sellerId: string) => {
  return oauthDisconnect(sellerId, storage)
  },

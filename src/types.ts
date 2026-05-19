@@ -25,6 +25,14 @@ export interface PaymentClientConfig {
      *  Required when running in a multi-tenant environment (one package, many orgs).
      */
     tenantId?: string
+    /** When true, OAuth token exchange sends test_token: true, returning TEST-xxx tokens
+     *  instead of APP_USR-xxx. Required for sandbox testing with Card Payment Brick.
+     *  Controlled by env var PAYMENT_MP_OAUTH_TEST_MODE. */
+    oauthTestMode?: boolean
+  }
+  logging?: {
+    enabled?: boolean
+    basePath?: string
   }
 }
 
@@ -127,6 +135,10 @@ export interface UniversalPaymentRequest {
 
   // Idempotency (optional)
   idempotencyKey?: string
+
+  // Reuse existing payment attempt log (to avoid duplicate logging)
+  // When provided, create() updates the existing log instead of creating a new one
+  existingAttemptId?: string
 }
 
 // ─── Customer & Address ──────────────────────────────────────────
@@ -321,6 +333,9 @@ export interface PaymentClient {
 
   // Health
   getProviderHealth(): Record<string, ProviderHealth>
+  
+  // Logger Health Check
+  checkLoggerHealth(): Promise<boolean>
 }
 
 // ─── Provider Health ─────────────────────────────────────────────

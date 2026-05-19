@@ -20,6 +20,7 @@ export class SellerManager {
   private autoRefresh: boolean
   private refreshMarginMs: number
   private logger: Logger | null
+  private testToken: boolean
 
   constructor(
     storage: TokenStorage,
@@ -27,7 +28,8 @@ export class SellerManager {
     clientSecret: string,
     logger?: Logger | null,
     autoRefresh?: boolean,
-    refreshMarginSeconds?: number
+    refreshMarginSeconds?: number,
+    testToken?: boolean
   ) {
     this.storage = storage
     this.clientId = clientId
@@ -35,6 +37,7 @@ export class SellerManager {
     this.logger = logger ?? null
     this.autoRefresh = autoRefresh !== false
     this.refreshMarginMs = (refreshMarginSeconds ?? 300) * 1000
+    this.testToken = testToken ?? false
   }
 
   /**
@@ -70,7 +73,8 @@ export class SellerManager {
         this.clientId,
         this.clientSecret,
         this.storage,
-        this.logger
+        this.logger,
+        this.testToken
       )
     }
 
@@ -81,7 +85,8 @@ export class SellerManager {
       this.clientId,
       this.clientSecret,
       this.storage,
-      this.logger
+      this.logger,
+      this.testToken
     ).catch((error: unknown) => {
       this.logger?.error('Background refresh failed', { sellerId, error: String(error) })
     })

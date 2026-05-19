@@ -22,6 +22,9 @@ import { UniversalCaptures } from './universal/captures.js'
 import { UniversalVoids } from './universal/voids.js'
 import { detectProvider } from './webhooks/detect.js'
 import { createWebhookHandler } from './webhooks/handler.js'
+import { PaymentAttemptLogger } from './logging/PaymentAttemptLogger.js'
+import type { PaymentAttemptLog } from './logging/types.js'
+import { loadLoggingConfig } from './config/logging.js'
 
 /**
  * PaymentClient — full-featured payment client
@@ -61,6 +64,7 @@ export class PaymentClient extends PaymentClientBase implements IPaymentClient {
   private _idempotency: IdempotencyService
   private _rateLimiter: RateLimiterService
   private _retry: RetryService
+  private _attemptLogger: PaymentAttemptLogger
 
   // Universal APIs
   readonly payments: UniversalPayments
@@ -86,6 +90,18 @@ export class PaymentClient extends PaymentClientBase implements IPaymentClient {
     const retryConfig = loadRetryConfigFromEnv()
     this._retry = new RetryService(retryConfig, this.logger)
 
+    // Initialize payment attempt logger
+    const loggingConfig = loadLoggingConfig()
+    // Override with config from PaymentClientConfig if provided
+    if (config.logging) {
+      if (config.logging.enabled !== undefined) {
+        loggingConfig.enabled = config.logging.enabled
+      }
+      if (config.logging.basePath !== undefined) {
+        loggingConfig.basePath = config.logging.basePath
+      }
+    }
+    this._attemptLogger = new PaymentAttemptLogger(loggingConfig)
 
     // Register configured providers WITH accessToken (required)
     if (config.providers.mercadopago) {
@@ -154,8 +170,8 @@ export class PaymentClient extends PaymentClientBase implements IPaymentClient {
     // Extract tenantId from config for multi-tenant isolation
     const tenantId = config.options?.tenantId
 
-    // Initialize universal APIs
-    this.payments = new UniversalPayments(this.loader, this.storage, this.logger, this._idempotency, this._rateLimiter, this._retry, tenantId)
+    // Initialize universal APIs with logger integration
+    this.payments = new UniversalPayments(this.loader, this.storage, this.logger, this._idempotency, this._rateLimiter, this._retry, tenantId, this._attemptLogger)
     this.refunds = new UniversalRefunds(this.loader, this.storage, this.logger, this._idempotency, this._rateLimiter, this._retry, tenantId)
     this.captures = new UniversalCaptures(this.loader, this.storage, this.logger, this._idempotency, this._rateLimiter, this._retry, tenantId)
     this.voids = new UniversalVoids(this.loader, this.storage, this.logger, this._idempotency, this._rateLimiter, this._retry, tenantId)
@@ -192,6 +208,16 @@ export class PaymentClient extends PaymentClientBase implements IPaymentClient {
         })
       }
     }
+
+    // Initialize payment attempt logger health check
+    try {
+      await this._attemptLogger.healthCheck()
+    } catch (loggerError) {
+      // Non-critical — logger failure should not block initialization
+      this.logger.warn('Payment attempt logger initialization failed', {
+        error: loggerError instanceof Error ? loggerError.message : String(loggerError),
+      })
+    }
   }
 
   // ─── Provider Namespaces ────────────────────────────────────
@@ -216,6 +242,33 @@ export class PaymentClient extends PaymentClientBase implements IPaymentClient {
     return this.createNotImplementedAPI<PayPalAPI>('paypal')
   }
 
+  // ─── Logger Health Check ────────────────────────────────────
+
+  async checkLoggerHealth(): Promise<boolean> {
+    return this._attemptLogger.healthCheck()
+  }
+
+  // ─── Payment Attempt Logging (public API) ───────────────────
+
+  /**
+   * Start a new payment attempt log.
+   * Use this BEFORE calling payments.create() to capture attempts
+   * that may fail during upstream validation.
+   * Pass the returned attemptId as existingAttemptId to payments.create()
+   * to avoid duplicate logging.
+   */
+  async logPaymentAttempt(log: Partial<PaymentAttemptLog>): Promise<string> {
+    return this._attemptLogger.logAttempt(log)
+  }
+
+  /**
+   * Update an existing payment attempt log.
+   * Used to mark attempts as failed during validation, or update with
+   * additional data (e.g. invoiceIds) before the payment is created.
+   */
+  async updatePaymentAttempt(attemptId: string, updates: Partial<PaymentAttemptLog>): Promise<void> {
+    return this._attemptLogger.updateAttempt(attemptId, updates)
+  }
 
   // ─── Feature Detection ──────────────────────────────────────
 

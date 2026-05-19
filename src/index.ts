@@ -70,8 +70,20 @@ export {
 export { MockPaymentProvider } from './testing/mock-provider.js'
 export { createMockClient } from './testing/create-mock-client.js'
 
+// Prisma client (for direct DB access)
+export { getPrismaClient, disconnectPrisma } from './prisma.js'
+
 // Logging
 export { ConsoleLogger, NullLogger, createLogger, getLogger, setLogger, resetLogger } from './logging/index.js'
+export { PaymentAttemptLogger } from './logging/PaymentAttemptLogger.js'
+export type {
+  PaymentAttemptLog,
+  PaymentAttemptLoggerConfig,
+  PaymentAttemptLoggerInterface,
+  PaymentAttemptLoggerHealthResult,
+  PaymentAttemptLoggerMetrics
+} from './logging/types.js'
+export { loadLoggingConfig, validateLoggingConfig } from './config/logging.js'
 
 // Transfer Intents
 export type {

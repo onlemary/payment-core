@@ -14,6 +14,8 @@ const refreshLocks = new Map<string, Promise<string | null>>()
  *
  * Also captures and persists public_key from the refresh response (if present).
  * MercadoPago's refresh_token grant returns public_key; authorization_code grant does not.
+ *
+ * When testToken is true, sends test_token: true to keep getting TEST- tokens (sandbox).
  */
 export async function refreshTokenWithLock(
  sellerId: string,
@@ -21,7 +23,8 @@ export async function refreshTokenWithLock(
  clientId: string,
  clientSecret: string,
  storage: TokenStorage,
- logger?: Logger | null
+ logger?: Logger | null,
+ testToken?: boolean
 ): Promise<string | null> {
  // Check if a refresh is already in progress for this seller
  const existingLock = refreshLocks.get(sellerId)
@@ -46,6 +49,7 @@ export async function refreshTokenWithLock(
  client_id: clientId,
  client_secret: clientSecret,
  refresh_token: refreshTokenValue,
+ ...(testToken ? { test_token: true } : {}),
  }),
  }
  )

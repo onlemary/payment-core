@@ -85,7 +85,7 @@ describe('SellerManager', () => {
       const token = await manager.getValidToken('seller2')
       expect(mockRefresh).toHaveBeenCalledOnce()
       expect(mockRefresh).toHaveBeenCalledWith(
-        'seller2', 'refresh_expired', 'client_id', 'client_secret', storage, null
+        'seller2', 'refresh_expired', 'client_id', 'client_secret', storage, null, false
       )
       expect(token).toBe('new_access_token')
     })
@@ -103,8 +103,11 @@ describe('SellerManager', () => {
       const token = await manager.getValidToken('seller3')
       // Returns current token immediately
       expect(token).toBe('access_soon')
-      // Background refresh was called (fire-and-forget)
+      // Background refresh was called (fire-and-forget) with testToken=false
       expect(mockRefresh).toHaveBeenCalledOnce()
+      expect(mockRefresh).toHaveBeenCalledWith(
+        'seller3', 'refresh_soon', 'client_id', 'client_secret', storage, null, false
+      )
     })
 
     it('should return current token when autoRefresh is off and not yet expired', async () => {
@@ -193,7 +196,9 @@ describe('SellerManager', () => {
       records.set('seller2', expiredTokens)
       const token = await defaultManager.getValidToken('seller2')
       // Should attempt refresh since autoRefresh is true by default
-      expect(mockRefresh).toHaveBeenCalled()
+      expect(mockRefresh).toHaveBeenCalledWith(
+        'seller2', 'refresh_expired', 'client_id', 'client_secret', storage, null, false
+      )
       expect(token).toBe('new_access_token')
     })
 
@@ -212,6 +217,9 @@ describe('SellerManager', () => {
       const token = await defaultManager.getValidToken('seller4')
       // Should trigger background refresh since within 300s margin
       expect(mockRefresh).toHaveBeenCalledOnce()
+      expect(mockRefresh).toHaveBeenCalledWith(
+        'seller4', 'refresh_4min', 'client_id', 'client_secret', storage, null, false
+      )
       expect(token).toBe('access_4min')
     })
 

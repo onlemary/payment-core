@@ -64,6 +64,43 @@ model MpUserOrg {
   @@map("mp_user_orgs")
 }
 
+model OrgPaymentConfig {
+  orgSlug           String   @id @map("org_slug") @db.VarChar(255)
+  bankName          String?  @map("bank_name")
+  bankAccountHolder  String?  @map("bank_account_holder")
+  bankCbu           String?  @map("bank_cbu")
+  bankAlias         String?  @map("bank_alias")
+  cvuAlias          String?  @map("cvu_alias")
+  mpAlias           String?  @map("mp_alias")
+
+  paymentMethods    PaymentMethod[]
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("org_payment_configs")
+}
+
+model PaymentMethod {
+  id                   String  @id @default(uuid())
+  orgSlug              String  @map("org_slug") @db.VarChar(255)
+  methodId             String  @map("method_id")
+  name                 String
+  enabled              Boolean @default(true)
+  requiresVerification Boolean @default(false) @map("requires_verification")
+  flow                 String?
+  provider             String?
+  instructions         String?
+  icon                 String?
+  implementation       String?
+
+  orgPaymentConfig OrgPaymentConfig @relation(fields: [orgSlug], references: [orgSlug], onDelete: Cascade)
+
+  @@unique([orgSlug, methodId])
+  @@index([orgSlug])
+  @@map("payment_methods")
+}
+
 model CheckoutSession {
   sessionId  String   @id @map("session_id")
   paymentId  String   @map("payment_id")

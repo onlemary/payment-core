@@ -144,6 +144,9 @@ export async function createMockClient(config?: Partial<PaymentClientConfig>): P
     },
     getProviderHealth: () => loader.getHealth(),
 
+    // Logger Health Check
+    checkLoggerHealth: async () => true, // Mock always returns healthy
+
     mockProvider,
   }
 

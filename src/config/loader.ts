@@ -44,6 +44,7 @@ export interface LoadedPaymentConfig {
  * - PAYMENT_MP_ACCESS_TOKEN - MercadoPago access token
  * - PAYMENT_MP_WEBHOOK_SECRET - MercadoPago webhook secret
  * - PAYMENT_MP_PUBLIC_KEY - MercadoPago public key (optional, for frontend)
+ * - PAYMENT_MP_OAUTH_TEST_MODE - When true, OAuth token exchange sends test_token: true (required)
  * - PAYMENT_STRIPE_SECRET_KEY - Stripe secret key
  * - PAYMENT_STRIPE_WEBHOOK_SECRET - Stripe webhook secret
  * - PAYMENT_PAYPAL_CLIENT_ID - PayPal client ID
@@ -75,8 +76,13 @@ export function loadPaymentConfig(
     const clientId = env[`${prefix}MP_CLIENT_ID`]
     const clientSecret = env[`${prefix}MP_CLIENT_SECRET`]
     const webhookSecret = env[`${prefix}MP_WEBHOOK_SECRET`]
+    const oauthTestMode = env[`${prefix}MP_OAUTH_TEST_MODE`] === 'true'
 
     if (accessToken) {
+      const options: Record<string, unknown> = {}
+      if (webhookSecret) options.webhookSecret = webhookSecret
+      options.oauthTestMode = oauthTestMode
+
       result.mercadopago = {
         providers: {
           mercadopago: {
@@ -85,7 +91,7 @@ export function loadPaymentConfig(
               clientId,
               clientSecret,
             },
-            options: webhookSecret ? { webhookSecret } : undefined,
+            options: Object.keys(options).length > 0 ? options : undefined,
           },
         },
       }
