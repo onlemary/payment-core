@@ -5,7 +5,7 @@
  * Uses environment variables with sensible defaults.
  */
 
-import { PaymentAttemptLoggerConfig } from '../logging/types'
+import { PaymentAttemptLoggerConfig } from '../logging/types.js'
 
 export const defaultLoggingConfig: PaymentAttemptLoggerConfig = {
   enabled: process.env.PAYMENT_LOGGING_ENABLED !== 'false',

@@ -5,12 +5,12 @@
  * Uses the official MercadoPago SDK.
  */
 
-import { CardFormProviderBase } from '../base/CardFormProviderBase'
+import { CardFormProviderBase } from '../base/CardFormProviderBase.js'
 import type {
   CardFormConfig,
   CardFormCallbacks,
   CardTokenResult,
-} from '../base/types'
+} from '../base/types.js'
 
 declare global {
   interface Window {

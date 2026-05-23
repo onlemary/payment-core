@@ -15,16 +15,16 @@
  * ```
  */
 
-import type { CardData, TokenizeResult, TokenizeOptions } from './types'
-import { tokenizeMercadoPago } from './mercadopago'
-import { tokenizeStripe } from './stripe'
+import type { CardData, TokenizeResult, TokenizeOptions } from './types.js'
+import { tokenizeMercadoPago } from './mercadopago.js'
+import { tokenizeStripe } from './stripe.js'
 
 // Re-export types
 export * from './types'
 
 // Re-export provider-specific tokenizers
-export { tokenizeMercadoPago } from './mercadopago'
-export { tokenizeStripe } from './stripe'
+export { tokenizeMercadoPago } from './mercadopago.js'
+export { tokenizeStripe } from './stripe.js'
 
 // Re-export SDK loaders
 export {
@@ -32,7 +32,7 @@ export {
   resetMercadoPagoSDK,
   isMercadoPagoSDKLoaded,
   loadStripeSDK,
-} from './sdk-loader'
+} from './sdk-loader.js'
 
 /**
  * Tokenize card data with a specific provider.

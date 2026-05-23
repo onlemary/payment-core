@@ -27,7 +27,7 @@
 export type {
   OAuthCallbackParams,
   OAuthCallbackHandlerOptions
-} from './types'
+} from './types.js'
 
 // Export utilities
 export {
@@ -36,8 +36,8 @@ export {
   validateRequiredParams,
   hasProviderError,
   formatOAuthError
-} from './utils'
+} from './utils.js'
 
 // Export handler
-export type { GenericOAuthCallbackHandler } from './callback-handler'
-export { createGenericOAuthCallbackHandler } from './callback-handler'
+export type { GenericOAuthCallbackHandler } from './callback-handler.js'
+export { createGenericOAuthCallbackHandler } from './callback-handler.js'

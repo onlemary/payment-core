@@ -12,7 +12,7 @@ import {
   PaymentAttemptLoggerConfig,
   PaymentAttemptLoggerInterface,
   LoggingErrorType
-} from './types'
+} from './types.js'
 
 export class PaymentAttemptLogger implements PaymentAttemptLoggerInterface {
   private config: PaymentAttemptLoggerConfig

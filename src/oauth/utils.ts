@@ -5,7 +5,7 @@
  * These utilities are provider-agnostic and follow the NO fallbacks/defaults principle.
  */
 
-import type { OAuthCallbackParams } from './types'
+import type { OAuthCallbackParams } from './types.js'
 
 /**
  * RouteInput interface (should match payment-core's existing type)

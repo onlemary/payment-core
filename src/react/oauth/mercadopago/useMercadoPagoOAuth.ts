@@ -25,8 +25,8 @@
  */
 
 import { useEffect, useCallback } from 'react'
-import { useOAuthState } from '../useOAuthState'
-import type { OAuthConfig, UseOAuthReturn } from '../types'
+import { useOAuthState } from '../useOAuthState.js'
+import type { OAuthConfig, UseOAuthReturn } from '../types.js'
 
 export interface UseMercadoPagoOAuthConfig extends Omit<OAuthConfig, 'baseUrl'> {
   /** Base URL for API calls (defaults to current origin) */

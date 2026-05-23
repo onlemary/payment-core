@@ -25,7 +25,7 @@ import type {
   CreatePaymentParams,
   CreatePaymentResult,
   ProviderPaymentStatus,
-} from '../checkout/types'
+} from '../checkout/types.js'
 
 export interface FetchCheckoutClientConfig {
   /** Base URL for API routes (e.g., '/api/gym_iron/payments') */

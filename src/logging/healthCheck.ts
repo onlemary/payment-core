@@ -5,8 +5,8 @@
  * Used for startup validation and runtime monitoring.
  */
 
-import { PaymentAttemptLogger } from './PaymentAttemptLogger'
-import { PaymentAttemptLoggerHealthResult, PaymentAttemptLoggerMetrics } from './types'
+import { PaymentAttemptLogger } from './PaymentAttemptLogger.js'
+import { PaymentAttemptLoggerHealthResult, PaymentAttemptLoggerMetrics } from './types.js'
 
 /**
  * Validates the logging system on startup or installation

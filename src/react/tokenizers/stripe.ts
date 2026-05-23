@@ -10,7 +10,7 @@
  * @see https://stripe.com/docs/payments/quickstart
  */
 
-import type { CardData, TokenizeResult, TokenizeOptions } from './types'
+import type { CardData, TokenizeResult, TokenizeOptions } from './types.js'
 
 /**
  * Stripe tokenizer stub.

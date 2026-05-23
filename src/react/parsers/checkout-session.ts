@@ -4,7 +4,7 @@
  * Validation and formatting utilities for checkout sessions.
  */
 
-import type { CheckoutSession, CheckoutStatus, PaymentMethodType } from '../checkout/types';
+import type { CheckoutSession, CheckoutStatus, PaymentMethodType } from '../checkout/types.js';
 
 /**
  * Validation result for checkout session

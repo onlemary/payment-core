@@ -14,9 +14,9 @@
  * ```
  */
 
-export { CountdownTimer, type CountdownTimerProps } from './countdown-timer'
-export { QRDisplay, type QRDisplayProps } from './qr-display'
-export { PaymentStatusBadge, type PaymentStatusBadgeProps } from './payment-status-badge'
-export { CheckoutModal, type CheckoutModalProps } from './checkout-modal'
-export { OrgHealthBadge, type OrgHealthBadgeProps } from './org-health-badge'
-export { MpAliasField, type MpAliasFieldProps } from './mp-alias-field'
+export { CountdownTimer, type CountdownTimerProps } from './countdown-timer.js'
+export { QRDisplay, type QRDisplayProps } from './qr-display.js'
+export { PaymentStatusBadge, type PaymentStatusBadgeProps } from './payment-status-badge.js'
+export { CheckoutModal, type CheckoutModalProps } from './checkout-modal.js'
+export { OrgHealthBadge, type OrgHealthBadgeProps } from './org-health-badge.js'
+export { MpAliasField, type MpAliasFieldProps } from './mp-alias-field.js'

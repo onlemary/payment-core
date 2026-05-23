@@ -11,8 +11,8 @@
  * - Multi-tenant agnostic via TypeScript generics
  */
 
-import type { OAuthCallbackHandlerOptions, OAuthCallbackParams } from './types'
-import { extractParams, validateRequiredParams, hasProviderError } from './utils'
+import type { OAuthCallbackHandlerOptions, OAuthCallbackParams } from './types.js'
+import { extractParams, validateRequiredParams, hasProviderError } from './utils.js'
 
 /**
  * RouteInput interface (should match payment-core's existing type)

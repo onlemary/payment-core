@@ -13,6 +13,6 @@
  */
 
 // Prisma adapter (for gym-platform)
-export { createPrismaCheckoutStorage, type PrismaCheckoutStorageOptions } from './prisma'
+export { createPrismaCheckoutStorage, type PrismaCheckoutStorageOptions } from './prisma.js'
 
 // Note: Drizzle and Supabase adapters will be added when needed

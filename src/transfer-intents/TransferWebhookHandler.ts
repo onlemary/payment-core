@@ -11,8 +11,8 @@
  */
 
 import crypto from 'crypto'
-import { TransferIntentStorage } from './TransferIntentStorage'
-import { PendingTransferStorage } from './PendingTransferStorage'
+import { TransferIntentStorage } from './TransferIntentStorage.js'
+import { PendingTransferStorage } from './PendingTransferStorage.js'
 import { TransferCodeGenerator } from './TransferCodeGenerator'
 import { TransferIntent, PendingTransfer } from './types'
 

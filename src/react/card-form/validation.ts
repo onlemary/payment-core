@@ -5,13 +5,13 @@
  * Re-exports from parsers module with additional UI-specific validations.
  */
 
-import type { CardData } from '../tokenizers/types'
+import type { CardData } from '../tokenizers/types.js'
 import { 
   luhnCheck, 
   detectCardBrand as detectBrand,
   formatCardNumber as formatNumber,
   parseCardNumber
-} from '../parsers/card-data'
+} from '../parsers/card-data.js'
 
 /**
  * Validate card number using Luhn algorithm.

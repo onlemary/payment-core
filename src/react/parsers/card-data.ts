@@ -5,7 +5,7 @@
  * Includes Luhn algorithm, expiration date validation, and formatting.
  */
 
-import type { CardData } from '../tokenizers/types';
+import type { CardData } from '../tokenizers/types.js';
 
 /**
  * Validation result for card data

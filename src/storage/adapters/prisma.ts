@@ -18,7 +18,7 @@
  * ```
  */
 
-import type { CheckoutSession, CheckoutStorage } from '../../react/checkout/types'
+import type { CheckoutSession, CheckoutStorage } from '../../react/checkout/types.js'
 
 export interface PrismaCheckoutStorageOptions {
   /** Table name in Prisma schema (default: 'checkoutSession') */

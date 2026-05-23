@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import type { OAuthState, OAuthConnectionState } from './types'
+import type { OAuthState, OAuthConnectionState } from './types.js'
 
 export interface UseOAuthStateConfig {
   /** Initial state */

@@ -32,7 +32,7 @@ export function createStorage(config: { type: string; connectionString?: string 
 }
 
 // Checkout adapters
-export * from './adapters'
+export * from './adapters/index.js'
 
 // Re-export CheckoutStorage interface for convenience
-export type { CheckoutStorage } from '../react/checkout/types'
+export type { CheckoutStorage } from '../react/checkout/types.js'

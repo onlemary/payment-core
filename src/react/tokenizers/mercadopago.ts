@@ -24,8 +24,8 @@
  * ```
  */
 
-import type { CardData, TokenizeResult, TokenizeOptions } from './types'
-import { loadMercadoPagoSDK } from './sdk-loader'
+import type { CardData, TokenizeResult, TokenizeOptions } from './types.js'
+import { loadMercadoPagoSDK } from './sdk-loader.js'
 
 /**
  * Tokenize card data with MercadoPago.
