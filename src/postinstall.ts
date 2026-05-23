@@ -10,9 +10,12 @@
 
 import { execSync } from 'child_process'
 import { existsSync, readFileSync } from 'fs'
+import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { Pool } from 'pg'
+
+const require = createRequire(import.meta.url)
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -147,7 +150,10 @@ try {
 // 2. Sincronizar schema (crea tablas si no existen)
 try {
   // Prisma v7+ no genera automáticamente, ni acepta --skip-generate (fue removido)
-  execSync('prisma db push --accept-data-loss', {
+  // Resolvemos la ruta exacta del binario para no depender de PATH (pnpm no siempre expone .bin)
+  const prismaPkg = require.resolve('prisma/package.json')
+  const prismaBin = join(dirname(dirname(prismaPkg)), '.bin', 'prisma')
+  execSync(`"${prismaBin}" db push --accept-data-loss`, {
     cwd: join(__dirname, '..'),
     env: { ...process.env, DATABASE_URL: url },
     stdio: 'inherit',
