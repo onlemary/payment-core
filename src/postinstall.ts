@@ -3,13 +3,16 @@
  * Busca .env.payment walkeando hacia arriba desde su propio directorio,
  * lo carga, crea la database si no existe y sincroniza el schema.
  * Idempotente: la segunda vez no hace nada.
+ *
+ * Prisma v7+ no soporta datasources en el constructor de PrismaClient,
+ * por eso usamos pg.Pool directamente para crear la DB.
  */
 
 import { execSync } from 'child_process'
 import { existsSync, readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { PrismaClient } from '../dist/.prisma/client/index.js'
+import { Pool } from 'pg'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -118,31 +121,33 @@ const maintenanceUrl = url.replace(/\/[^/?]+(?=\?|$)/, '/postgres')
 
 log(`Verificando DB: ${maskUrl(url)}`)
 
-// 1. Crear database si no existe
-const maintenanceClient = new PrismaClient({
-  datasources: { db: { url: maintenanceUrl } },
-})
+// 1. Crear database si no existe (usa pg.Pool, no PrismaClient — Prisma v7+ ya no soporta datasources en constructor)
+const pool = new Pool({ connectionString: maintenanceUrl })
 
 try {
-  await maintenanceClient.$connect()
-  await maintenanceClient.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`)
-  log(`Database ${dbName} creada`)
-} catch (err: unknown) {
-  const message = err instanceof Error ? err.message : String(err)
-  if (message.includes('already exists')) {
-    log(`Database ${dbName} ya existe`)
-  } else {
-    log(`Error al crear database: ${message}`)
-    await maintenanceClient.$disconnect()
-    process.exit(1)
+  const client = await pool.connect()
+  try {
+    await client.query(`CREATE DATABASE "${dbName}"`)
+    log(`Database ${dbName} creada`)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    if (message.includes('already exists')) {
+      log(`Database ${dbName} ya existe`)
+    } else {
+      log(`Error al crear database: ${message}`)
+      process.exit(1)
+    }
+  } finally {
+    client.release()
   }
 } finally {
-  await maintenanceClient.$disconnect()
+  await pool.end()
 }
 
 // 2. Sincronizar schema (crea tablas si no existen)
 try {
-  execSync('npx prisma db push --skip-generate --accept-data-loss', {
+  // Prisma v7+ no genera automáticamente, ni acepta --skip-generate (fue removido)
+  execSync('prisma db push --accept-data-loss', {
     cwd: join(__dirname, '..'),
     env: { ...process.env, DATABASE_URL: url },
     stdio: 'inherit',
