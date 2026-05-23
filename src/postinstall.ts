@@ -150,10 +150,9 @@ try {
 // 2. Sincronizar schema (crea tablas si no existen)
 try {
   // Prisma v7+ no genera automáticamente, ni acepta --skip-generate (fue removido)
-  // Resolvemos la ruta exacta del binario para no depender de PATH (pnpm no siempre expone .bin)
-  const prismaPkg = require.resolve('prisma/package.json')
-  const prismaBin = join(dirname(dirname(prismaPkg)), '.bin', 'prisma')
-  execSync(`"${prismaBin}" db push --accept-data-loss`, {
+  // Resolvemos el entry point directamente (pnpm no expone .bin en su virtual store)
+  const prismaEntry = require.resolve('prisma/build/index.js')
+  execSync(`node "${prismaEntry}" db push --accept-data-loss`, {
     cwd: join(__dirname, '..'),
     env: { ...process.env, DATABASE_URL: url },
     stdio: 'inherit',
