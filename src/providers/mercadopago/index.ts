@@ -279,16 +279,14 @@ export default class MercadoPagoProvider implements PaymentProvider {
  }
 
  	return createTransfer(token, userId, request.amount, request.externalReference, this.logger)
- 	}
-
- 	getCSPDirectives(): Record<string, string[]> {
- 		return {
- 			'connect-src': ['*.mercadopago.com', '*.mercadolibre.com', '*.mlstatic.com'],
- 			'frame-src': ['*.mercadopago.com', '*.mercadolibre.com'],
- 			'style-src': ['*.mlstatic.com'],
- 			'font-src': ['*.mlstatic.com'],
- 			'img-src': ['*.mercadopago.com', '*.mercadolibre.com', '*.mlstatic.com'],
- 		}
+ 	}getCSPDirectives(): Record<string, string[]> {
+		return {
+			'connect-src': ['*.mercadopago.com', '*.mercadopago.com.ar', '*.mercadolibre.com', '*.mlstatic.com'],
+			'frame-src': ['*.mercadopago.com', '*.mercadopago.com.ar', '*.mercadolibre.com'],
+			'style-src': ['*.mlstatic.com'],
+			'font-src': ['*.mlstatic.com'],
+			'img-src': ['*.mercadopago.com', '*.mercadopago.com.ar', '*.mercadolibre.com', '*.mlstatic.com'],
+		}
  	}
 
  	getRequiredEnvVars(): string[] {

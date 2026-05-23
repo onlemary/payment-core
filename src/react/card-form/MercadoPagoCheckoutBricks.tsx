@@ -58,6 +58,9 @@ export interface MercadoPagoCheckoutBricksProps {
  metadata?: {
  brand?: string
  lastDigits?: string
+ payerEmail?: string
+ payerDocumentType?: string
+ payerDocumentNumber?: string
  }
  }) => void
  
@@ -223,7 +226,7 @@ export function MercadoPagoCheckoutBricks({
                 onLoadingChange?.(true)
 
                 try {
-                  const { token, payment_method_id, issuer_id, installments } = formData
+                  const { token, payment_method_id, issuer_id, installments, payer } = formData
 
                   onSuccess({
                     token: token || '',
@@ -233,6 +236,9 @@ export function MercadoPagoCheckoutBricks({
                     metadata: {
                       brand: payment_method_id,
                       lastDigits: formData.card_number?.slice(-4),
+                      payerEmail: payer?.email || payerEmail,
+                      payerDocumentType: payer?.identification?.type,
+                      payerDocumentNumber: payer?.identification?.number,
                     },
                   })
 

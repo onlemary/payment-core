@@ -1,8 +1,10 @@
 // src/prisma.ts
 // Configurable PrismaClient singleton.
 // Uses PAYMENT_CORE_DB_URL env var if DATABASE_URL is not set.
+// Prisma v7+ requires driver adapter pattern instead of datasources.
 
 import { PrismaClient } from '../dist/.prisma/client/index.js'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 let client: PrismaClient | null = null
 
@@ -16,9 +18,8 @@ export function getPrismaClient(): PrismaClient {
     )
   }
 
-  client = new PrismaClient({
-    datasources: { db: { url } },
-  })
+  const adapter = new PrismaPg({ connectionString: url })
+  client = new PrismaClient({ adapter })
 
   return client
 }
