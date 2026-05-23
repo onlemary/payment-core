@@ -1,6 +1,6 @@
 // src/prisma.ts
 // Configurable PrismaClient singleton.
-// Uses PAYMENT_CORE_DB_URL env var if DATABASE_URL is not set.
+// Uses PAYMENT_CORE_DB_URL env var (single source of truth).
 // Prisma v7+ requires driver adapter pattern instead of datasources.
 
 import { PrismaClient } from '../dist/.prisma/client/index.js'
@@ -11,10 +11,10 @@ let client: PrismaClient | null = null
 export function getPrismaClient(): PrismaClient {
   if (client) return client
 
-  const url = process.env.DATABASE_URL || process.env.PAYMENT_CORE_DB_URL
+  const url = process.env.PAYMENT_CORE_DB_URL
   if (!url) {
     throw new Error(
-      'Prisma requires either DATABASE_URL or PAYMENT_CORE_DB_URL environment variable'
+      'Prisma requires PAYMENT_CORE_DB_URL environment variable'
     )
   }
 
