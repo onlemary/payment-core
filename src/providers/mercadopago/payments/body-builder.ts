@@ -15,7 +15,10 @@ export function buildMPPaymentBody(request: UniversalPaymentRequest): Record<str
     transaction_amount: request.amount,
     token: pm.token,
     description: request.description || 'Pago',
-    installments: pm.installments || 1,
+    // Defense-in-depth: MP SDK can return installments as string ("1"),
+    // and MP API rejects non-numeric values with
+    // "installments attribute must be numeric". Force coercion here.
+    installments: Number(pm.installments) || 1,
     payment_method_id: pm.paymentMethodId,
     payer: {
       email: pm.payerEmail,
@@ -53,7 +56,7 @@ export function buildMPPaymentBodyFromInternal(data: MPPaymentRequest): Record<s
     transaction_amount: data.amount,
     token: data.token,
     description: data.description || 'Pago',
-    installments: data.installments || 1,
+    installments: Number(data.installments) || 1,
     payment_method_id: data.paymentMethodId,
     payer: {
       email: data.payerEmail,

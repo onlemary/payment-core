@@ -30,6 +30,13 @@ export interface OrgPaymentConfigData {
   bankAlias?: string
   cvuAlias?: string
   mpAlias?: string
+  /**
+   * Marketplace fee percentage (split payment).
+   * Decimal between 0 and 1 (e.g. 0.10 = 10%).
+   * 0 = split disabled (vendor receives full amount minus MP fees).
+   * Required field — callers must always provide a value (no fallback).
+   */
+  marketplaceFeePercentage: number
   paymentMethods: PaymentMethodData[]
 }
 
@@ -62,6 +69,7 @@ export class PaymentConfigStorage {
       bankAlias: config.bankAlias ?? undefined,
       cvuAlias: config.cvuAlias ?? undefined,
       mpAlias: config.mpAlias ?? undefined,
+      marketplaceFeePercentage: Number(config.marketplaceFeePercentage),
       paymentMethods: config.paymentMethods.map((m) => ({
         methodId: m.methodId,
         name: m.name,
@@ -100,6 +108,7 @@ export class PaymentConfigStorage {
           bankAlias: data.bankAlias ?? null,
           cvuAlias: data.cvuAlias ?? null,
           mpAlias: data.mpAlias ?? null,
+          marketplaceFeePercentage: data.marketplaceFeePercentage,
         },
         update: {
           bankName: data.bankName ?? null,
@@ -108,6 +117,7 @@ export class PaymentConfigStorage {
           bankAlias: data.bankAlias ?? null,
           cvuAlias: data.cvuAlias ?? null,
           mpAlias: data.mpAlias ?? null,
+          marketplaceFeePercentage: data.marketplaceFeePercentage,
         },
       })
 
@@ -147,6 +157,7 @@ export class PaymentConfigStorage {
       bankAlias: config.bankAlias ?? undefined,
       cvuAlias: config.cvuAlias ?? undefined,
       mpAlias: config.mpAlias ?? undefined,
+      marketplaceFeePercentage: Number(config.marketplaceFeePercentage),
       paymentMethods: config.paymentMethods.map((m) => ({
         methodId: m.methodId,
         name: m.name,

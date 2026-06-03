@@ -163,3 +163,31 @@ try {
   log('Verificá que PAYMENT_CORE_DB_URL sea correcta y la DB exista.')
   process.exit(1)
 }
+
+// 3. Índices que Prisma no expresa declarativamente (índices parciales).
+//    Idempotentes (IF NOT EXISTS).
+try {
+  const pool2 = new Pool({ connectionString: url })
+  try {
+    // (a) Cargo mensual recurrente: 1 por (org, período). Excluye comisiones
+    //     (source='commission'), que son muchas por período (una por pago de socio).
+    await pool2.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS platform_billing_charge_period_uniq
+       ON platform_billing_ledger (org_slug, period)
+       WHERE entry_type = 'charge' AND source <> 'commission' AND period IS NOT NULL`
+    )
+    // (b) Comisión por pago: 1 por (org, factura). Evita doble devengo si el flujo
+    //     de confirmación de pago se reintenta para la misma factura.
+    await pool2.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS platform_billing_commission_ref_uniq
+       ON platform_billing_ledger (org_slug, mp_reference)
+       WHERE source = 'commission' AND mp_reference IS NOT NULL`
+    )
+    log('Índices parciales de idempotencia asegurados (charge_period, commission_ref).')
+  } finally {
+    await pool2.end()
+  }
+} catch (err) {
+  // No es fatal: el check a nivel app sigue cubriendo el caso normal (no concurrente).
+  log(`Aviso: no se pudieron crear los índices parciales de idempotencia: ${err instanceof Error ? err.message : String(err)}`)
+}

@@ -1,6 +1,6 @@
 {
   "name": "@onlemary/payment-core",
-  "version": "0.4.39",
+  "version": "0.6.1",
   "description": "Multi-gateway payment processing package with unified abstraction for MercadoPago, Stripe, PayPal, and more",
   "type": "module",
   "main": "./dist/index.js",
@@ -50,6 +50,18 @@
     "./config-storage": {
       "types": "./dist/config-storage/index.d.ts",
       "import": "./dist/config-storage/index.js"
+    },
+    "./platform-billing-storage": {
+      "types": "./dist/platform-billing-storage/index.d.ts",
+      "import": "./dist/platform-billing-storage/index.js"
+    },
+    "./preapprovals": {
+      "types": "./dist/preapprovals/service.d.ts",
+      "import": "./dist/preapprovals/service.js"
+    },
+    "./preapproval-storage": {
+      "types": "./dist/preapproval-storage/index.d.ts",
+      "import": "./dist/preapproval-storage/index.js"
     },
     "./providers/mercadopago": {
       "types": "./dist/providers/mercadopago/index.d.ts",
@@ -118,7 +130,7 @@
     ".env.payment.example"
   ],
   "scripts": {
-    "build": "prisma generate && tsc",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

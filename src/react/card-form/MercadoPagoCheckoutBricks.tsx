@@ -35,6 +35,7 @@
 
 import React, { useEffect, useId, useRef, useState, useCallback } from 'react'
 import { Loader2 } from 'lucide-react'
+import { isMercadoPagoSandbox, rewriteToSandboxEmail } from '../../providers/mercadopago/sandbox-utils.js'
 
 export interface MercadoPagoCheckoutBricksProps {
  /** MercadoPago public key */
@@ -228,15 +229,24 @@ export function MercadoPagoCheckoutBricks({
                 try {
                   const { token, payment_method_id, issuer_id, installments, payer } = formData
 
+                  // In MP sandbox, the payer email MUST end in @testuser.com.
+                  // Detect TEST- public keys and rewrite the email accordingly.
+                  // In production, the original email is passed through unchanged.
+                  const isSandbox = isMercadoPagoSandbox(publicKey)
+                  const rawEmail = payer?.email || payerEmail || ''
+                  const finalPayerEmail = isSandbox
+                    ? rewriteToSandboxEmail(rawEmail)
+                    : rawEmail
+
                   onSuccess({
                     token: token || '',
                     paymentMethodId: payment_method_id || '',
                     issuerId: issuer_id || '',
-                    installments: installments || 1,
+                    installments: Number(installments) || 1,
                     metadata: {
                       brand: payment_method_id,
                       lastDigits: formData.card_number?.slice(-4),
-                      payerEmail: payer?.email || payerEmail,
+                      payerEmail: finalPayerEmail,
                       payerDocumentType: payer?.identification?.type,
                       payerDocumentNumber: payer?.identification?.number,
                     },

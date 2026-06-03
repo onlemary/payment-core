@@ -8,30 +8,30 @@ datasource db {
 }
 
 model OAuthToken {
-  userId       BigInt   @id @map("user_id")
-  orgSlug      String   @map("org_slug") @db.VarChar(255)
-  accessToken  String   @map("access_token")
-  refreshToken String?  @map("refresh_token")
+  userId       BigInt    @id @map("user_id")
+  orgSlug      String    @map("org_slug") @db.VarChar(255)
+  accessToken  String    @map("access_token")
+  refreshToken String?   @map("refresh_token")
   expiresAt    DateTime? @map("expires_at")
   connectedAt  DateTime? @map("connected_at")
-  publicKey    String?  @map("public_key")
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  publicKey    String?   @map("public_key")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@map("oauth_tokens")
 }
 
 model TransferIntent {
-  id           String   @id @default(uuid())
-  orgSlug      String   @map("org_slug") @db.VarChar(255)
-  transferCode String   @unique @map("transfer_code")
+  id           String    @id @default(uuid())
+  orgSlug      String    @map("org_slug") @db.VarChar(255)
+  transferCode String    @unique @map("transfer_code")
   amount       Int
-  currency     String   @default("ARS")
-  invoiceIds   Json     @map("invoice_ids")
-  status       String   @default("pending")
+  currency     String    @default("ARS")
+  invoiceIds   Json      @map("invoice_ids")
+  status       String    @default("pending")
   matchedAt    DateTime? @map("matched_at")
-  transferId   String?  @map("transfer_id")
+  transferId   String?   @map("transfer_id")
   expiresAt    DateTime? @map("expires_at")
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
   metadata     Json?
 
   @@index([orgSlug])
@@ -39,17 +39,17 @@ model TransferIntent {
 }
 
 model PendingTransfer {
-  id        String   @id @default(uuid())
-  orgSlug   String   @map("org_slug") @db.VarChar(255)
-  transferId String  @map("transfer_id")
-  amount    Int
-  currency  String   @default("ARS")
-  concept   String?
-  status    String   @default("unassigned")
-  receivedAt DateTime @default(now()) @map("received_at")
-  assignedBy String?  @map("assigned_by")
+  id         String    @id @default(uuid())
+  orgSlug    String    @map("org_slug") @db.VarChar(255)
+  transferId String    @map("transfer_id")
+  amount     Int
+  currency   String    @default("ARS")
+  concept    String?
+  status     String    @default("unassigned")
+  receivedAt DateTime  @default(now()) @map("received_at")
+  assignedBy String?   @map("assigned_by")
   assignedAt DateTime? @map("assigned_at")
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   @@index([orgSlug])
   @@map("pending_transfers")
@@ -64,18 +64,23 @@ model MpUserOrg {
 }
 
 model OrgPaymentConfig {
-  orgSlug           String   @id @map("org_slug") @db.VarChar(255)
-  bankName          String?  @map("bank_name")
-  bankAccountHolder  String?  @map("bank_account_holder")
-  bankCbu           String?  @map("bank_cbu")
-  bankAlias         String?  @map("bank_alias")
-  cvuAlias          String?  @map("cvu_alias")
-  mpAlias           String?  @map("mp_alias")
+  orgSlug           String  @id @map("org_slug") @db.VarChar(255)
+  bankName          String? @map("bank_name")
+  bankAccountHolder String? @map("bank_account_holder")
+  bankCbu           String? @map("bank_cbu")
+  bankAlias         String? @map("bank_alias")
+  cvuAlias          String? @map("cvu_alias")
+  mpAlias           String? @map("mp_alias")
 
-  paymentMethods    PaymentMethod[]
+  /// Marketplace fee percentage (split payment). Decimal between 0 and 1.
+  /// 0 = split disabled (vendor receives full amount minus MP fees).
+  /// > 0 = MercadoPago routes (amount * marketplaceFeePercentage) to the marketplace collector.
+  marketplaceFeePercentage Decimal @default(0) @map("marketplace_fee_percentage") @db.Decimal(5, 4)
 
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  paymentMethods PaymentMethod[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("org_payment_configs")
 }
@@ -101,18 +106,202 @@ model PaymentMethod {
 }
 
 model CheckoutSession {
-  sessionId  String   @id @map("session_id")
-  paymentId  String   @map("payment_id")
-  orgSlug    String   @map("org_slug") @db.VarChar(255)
-  provider   String   @default("mercadopago")
-  invoiceIds Json     @map("invoice_ids")
-  amount     Decimal  @db.Decimal(10, 2)
-  currency   String   @default("ARS")
-  status     String   @default("created")
-  createdAt  DateTime @default(now()) @map("created_at")
+  sessionId  String    @id @map("session_id")
+  paymentId  String    @map("payment_id")
+  orgSlug    String    @map("org_slug") @db.VarChar(255)
+  provider   String    @default("mercadopago")
+  invoiceIds Json      @map("invoice_ids")
+  amount     Decimal   @db.Decimal(10, 2)
+  currency   String    @default("ARS")
+  status     String    @default("created")
+  createdAt  DateTime  @default(now()) @map("created_at")
   expiresAt  DateTime? @map("expires_at")
 
   @@index([paymentId])
   @@index([orgSlug])
   @@map("checkout_sessions")
+}
+
+/// Platform-to-tenant billing configuration (1 per org).
+/// Generic SaaS billing: how the PLATFORM charges each tenant/org for using the system.
+/// This is independent of how the org charges its own end-customers.
+model PlatformBillingConfig {
+  orgSlug String @id @map("org_slug") @db.VarChar(255)
+
+  /// Billing mode: disabled | manual | commission | mp_auto
+  /// - disabled: not billed (trial/courtesy)
+  /// - manual: running account, tenant pays out-of-band, recorded manually
+  /// - commission: % of what the org invoiced (collected via marketplace split)
+  /// - mp_auto: MP subscription where the tenant is the payer (future)
+  mode String @default("disabled")
+
+  /// Fixed monthly amount in cents (used for manual/mp_auto fixed billing).
+  amountCents Int @default(0) @map("amount_cents")
+
+  /// Commission percentage when mode = commission. Decimal 0..1 (e.g. 0.10 = 10%).
+  commissionPct Decimal @default(0) @map("commission_pct") @db.Decimal(5, 4)
+
+  /// Billing currency. ARS by default; flexible for the future.
+  currency String @default("ARS")
+
+  /// MP user_id of the platform account (destination for mp_auto). Optional.
+  mpUserId String? @map("mp_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_billing_configs")
+}
+
+/// Immutable ledger (running account) of platform-to-tenant billing movements.
+/// Each row is a charge (debit) or a payment (credit). Balance owed = Σ(charges) − Σ(payments).
+/// Rows are append-only: amounts are snapshots and must never be mutated.
+model PlatformBillingLedger {
+  id      String @id @default(uuid())
+  orgSlug String @map("org_slug") @db.VarChar(255)
+
+  /// charge (debit, increases what the org owes) | payment (credit, reduces it)
+  entryType String @map("entry_type")
+
+  /// Origin of the movement: manual | cash | mp_transfer | mp_split | commission | adjustment
+  source String
+
+  /// Snapshot of the amount in cents at the time of the movement (immutable).
+  amountCents Int @default(0) @map("amount_cents")
+
+  currency String @default("ARS")
+
+  /// Movement status: recorded | charged | failed
+  status String @default("recorded")
+
+  /// Billing period this movement belongs to, e.g. "2026-05" (for monthly charges).
+  period String?
+
+  /// External reference (e.g. MP payment/transfer id), if any.
+  mpReference String? @map("mp_reference")
+
+  /// Free-text note (e.g. "partial cash payment").
+  note String?
+
+  /// Who registered the movement (super-admin email), if manual.
+  createdBy String? @map("created_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([orgSlug])
+  @@index([orgSlug, period])
+  // NOTE: Idempotency is enforced by PARTIAL UNIQUE INDEXES (Prisma can't express them):
+  //   (a) platform_billing_charge_period_uniq:
+  //       UNIQUE (org_slug, period) WHERE entry_type='charge' AND source<>'commission' AND period IS NOT NULL
+  //       → at most one MONTHLY charge per (org, period).
+  //   (b) platform_billing_commission_ref_uniq:
+  //       UNIQUE (org_slug, mp_reference) WHERE source='commission' AND mp_reference IS NOT NULL
+  //       → at most one COMMISSION per (org, invoice/payment reference).
+  // Both are created via raw SQL in scripts/postinstall (dist/postinstall.js) after `prisma db push`.
+  @@map("platform_billing_ledger")
+}
+
+/// Preapproval (recurring subscription) for automatic debit.
+/// Generic: no reference to Lago, invoices, or gym-specific concepts.
+/// Business rules live in the consuming app.
+model Preapproval {
+  id      String @id @default(cuid())
+  orgSlug String @map("org_slug") @db.VarChar(255)
+
+  /// External preapproval ID from the payment provider (e.g., MP preapproval_id)
+  externalId String @map("external_id")
+
+  /// Generic customer identifier (the app decides what this means — e.g., Lago customer ID)
+  customerId String @map("customer_id")
+
+  /// Status: pending | authorized | paused | cancelled
+  status String
+
+  /// Amount in cents
+  amountCents Int @map("amount_cents")
+
+  currency String @default("ARS")
+
+  /// Billing frequency: monthly
+  frequency String @default("monthly")
+
+  /// Generic external reference (the app can store e.g. "customer:<lagoId>")
+  externalReference String? @map("external_reference")
+
+  startDate DateTime  @map("start_date")
+  endDate   DateTime? @map("end_date")
+
+  /// Provider-specific metadata (MP response, etc.)
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([orgSlug, externalId])
+  @@index([orgSlug, customerId])
+  @@index([orgSlug, status])
+  @@map("preapprovals")
+}
+
+/// Payment — any payment captured by a provider.
+/// Generic: no reference to Lago, invoices, or gym-specific concepts.
+/// Business rules live in the consuming app.
+///
+/// `kind` discriminates the origin of the charge:
+/// - one_shot: single payment (e.g., MP `payment` notification, Stripe `payment_intent.succeeded`).
+/// - subscription: charge against a Preapproval (e.g., MP `subscription_authorized_payment`).
+///
+/// The single `payments` table replaces the old `preapproval_payments` table (fold Q3):
+/// one-shot and subscription charges live in the same place and can be queried uniformly.
+/// Foreign keys to Preapproval are not enforced at the DB level (use externalPreapprovalId).
+model Payment {
+  id      String @id @default(cuid())
+  orgSlug String @map("org_slug") @db.VarChar(255)
+
+  /// Kind: one_shot | subscription
+  kind String
+
+  /// Provider: mercadopago | stripe
+  provider String
+
+  /// External payment ID from the provider.
+  /// - one_shot: MP `payment.id` / Stripe `payment_intent.id`.
+  /// - subscription: MP `authorized_payment.id` / Stripe `invoice.payment.id`.
+  externalPaymentId String @map("external_payment_id")
+
+  /// External preapproval/subscription ID, only set when kind='subscription'.
+  /// For MP: `preapproval.id`. For Stripe: `subscription.id` (future).
+  /// Indexed for reverse lookup of charges per subscription.
+  externalPreapprovalId String? @map("external_preapproval_id")
+
+  /// Generic customer identifier (the app decides what this means — e.g., Lago customer ID)
+  customerId String @map("customer_id")
+
+  /// Generic pointer to the invoice in the consuming app's billing system.
+  /// The app fills this (e.g., Lago invoice ID). Core does not interpret it.
+  invoiceId String? @map("invoice_id")
+
+  /// Amount in cents (actual charge, from the provider)
+  amountCents Int @map("amount_cents")
+
+  currency String @default("ARS")
+
+  /// Status: approved | refunded | failed
+  status String
+
+  /// When the provider processed/approved the payment
+  paidAt DateTime @map("paid_at")
+
+  /// Provider-specific metadata (raw provider response, etc.)
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([orgSlug, externalPaymentId])
+  @@index([orgSlug, invoiceId])
+  @@index([orgSlug, externalPreapprovalId])
+  @@index([orgSlug, status])
+  @@index([orgSlug, kind])
+  @@map("payments")
 }

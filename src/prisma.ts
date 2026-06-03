@@ -3,8 +3,10 @@
 // Uses PAYMENT_CORE_DB_URL env var (single source of truth).
 // Prisma v7+ requires driver adapter pattern instead of datasources.
 
-import { PrismaClient } from '../dist/.prisma/client/index.js'
+import { Prisma, PrismaClient } from '../dist/.prisma/client/index.js'
 import { PrismaPg } from '@prisma/adapter-pg'
+
+export { Prisma }
 
 let client: PrismaClient | null = null
 

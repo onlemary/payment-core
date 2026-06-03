@@ -13,8 +13,8 @@
 import crypto from 'crypto'
 import { TransferIntentStorage } from './TransferIntentStorage.js'
 import { PendingTransferStorage } from './PendingTransferStorage.js'
-import { TransferCodeGenerator } from './TransferCodeGenerator'
-import { TransferIntent, PendingTransfer } from './types'
+import { TransferCodeGenerator } from './TransferCodeGenerator.js'
+import { TransferIntent, PendingTransfer } from './types.js'
 
 /**
  * Configuration for TransferWebhookHandler

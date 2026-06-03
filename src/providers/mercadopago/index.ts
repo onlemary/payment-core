@@ -302,3 +302,9 @@ export default class MercadoPagoProvider implements PaymentProvider {
  
  // Also export as named export for flexibility
  export { MercadoPagoProvider }
+
+
+// Re-export sandbox utilities so consumers can import them via the package's
+// public surface (used by E2E tests + custom integrations that need to know
+// when a public_key is in TEST mode).
+export { rewriteToSandboxEmail, isMercadoPagoSandbox } from './sandbox-utils.js'

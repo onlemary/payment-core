@@ -30,6 +30,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { isMercadoPagoSandbox, rewriteToSandboxEmail } from '../../providers/mercadopago/sandbox-utils.js'
 
 export interface MercadoPagoCardFormProps {
   /** MercadoPago public key */
@@ -50,6 +51,9 @@ export interface MercadoPagoCardFormProps {
     metadata?: {
       brand?: string
       lastDigits?: string
+      payerEmail?: string
+      payerDocumentType?: string
+      payerDocumentNumber?: string
     }
   }) => void
   
@@ -204,14 +208,31 @@ export function MercadoPagoCardForm({
 
             const cardFormData = cardForm.getCardFormData()
 
+            // MP SDK returns `installments` as a string (e.g. "1") even though
+            // its type definitions say number. MP API rejects strings with
+            // "installments attribute must be numeric", so we coerce here.
+            const parsedInstallments = Number(cardFormData.installments) || 1
+
+            // In MP sandbox, the payer email MUST end in @testuser.com.
+            // Detect TEST- public keys and rewrite the email accordingly.
+            // In production, the original email is passed through unchanged.
+            const isSandbox = isMercadoPagoSandbox(publicKey)
+            const rawEmail = cardFormData.cardholderEmail || ''
+            const payerEmail = isSandbox
+              ? rewriteToSandboxEmail(rawEmail)
+              : rawEmail
+
             onSuccess({
               token: cardFormData.token,
               paymentMethodId: cardFormData.paymentMethodId,
               issuerId: cardFormData.issuerId,
-              installments: cardFormData.installments,
+              installments: parsedInstallments,
               metadata: {
                 brand: cardFormData.paymentMethodId,
                 lastDigits: cardFormData.cardNumber?.slice(-4),
+                payerEmail,
+                payerDocumentType: cardFormData.identificationType,
+                payerDocumentNumber: cardFormData.identificationNumber,
               },
             })
           },

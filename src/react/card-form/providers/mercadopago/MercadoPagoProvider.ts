@@ -11,6 +11,7 @@ import type {
   CardFormCallbacks,
   CardTokenResult,
 } from '../base/types.js'
+import { isMercadoPagoSandbox, rewriteToSandboxEmail } from '../../../../providers/mercadopago/sandbox-utils.js'
 
 declare global {
   interface Window {
@@ -161,16 +162,30 @@ export class MercadoPagoProvider extends CardFormProviderBase {
     try {
       const cardFormData = this.cardForm.getCardFormData()
       
+      // MP SDK returns `installments` as a string (e.g. "1") even though its
+      // type definitions say number. MP API rejects strings with
+      // "installments attribute must be numeric", so we coerce here.
+      const parsedInstallments = Number(cardFormData.installments) || 1
+      
+      // In MP sandbox, the payer email MUST end in @testuser.com.
+      // When the configured public key starts with TEST-, rewrite the email.
+      const publicKey = this.config?.publicKey ?? ''
+      const isSandbox = isMercadoPagoSandbox(publicKey)
+      const rawEmail = cardFormData.cardholderEmail || ''
+      const cardholderEmail = isSandbox
+        ? rewriteToSandboxEmail(rawEmail)
+        : rawEmail
+      
       const result: CardTokenResult = {
         token: cardFormData.token,
         paymentMethodId: cardFormData.paymentMethodId,
         issuerId: cardFormData.issuerId,
-        installments: cardFormData.installments || 1,
+        installments: parsedInstallments,
         metadata: {
           brand: cardFormData.paymentMethodId,
           lastDigits: cardFormData.cardNumber?.slice(-4),
           cardholderName: cardFormData.cardholderName,
-          cardholderEmail: cardFormData.cardholderEmail,
+          cardholderEmail,
         },
       }
       
