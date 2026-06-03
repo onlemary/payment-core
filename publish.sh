@@ -23,6 +23,9 @@
 #   - GITHUB_TOKEN configurado (en .env o variable de entorno)
 #   - Build ya ejecutado (npm run build) — no hace build aquí
 #     para evitar duplicación con prepublishOnly y dev-publish.sh
+#   - package.json con la versión YA bumpeada por dev-publish.sh
+#     (publish.sh NO bumpea — eso es responsabilidad de dev-publish.sh
+#     para evitar doble bump).
 #
 # NOTA: npm publish ejecuta prepublishOnly (build + test) automáticamente.
 #       No hacemos build explícito aquí para no duplicar.
@@ -52,13 +55,24 @@ if [ -z "$GITHUB_TOKEN" ]; then
     exit 0
 fi
 
-# Auto-incrementar versión patch (0.1.9 → 0.1.10)
-echo "📦 Incrementando versión..."
-npm version patch --no-git-tag-version
+# Verificar que el árbol git está limpio (al menos package.json).
+# Si el dev-publish.sh no fue usado, hay cambios sin commitear — fallamos
+# para evitar publicar una versión que el caller no bumpeó explícitamente.
+if ! git diff --quiet package.json 2>/dev/null; then
+    if [ -z "${ALLOW_DIRTY_PUBLISH:-}" ]; then
+        echo "❌ package.json tiene cambios sin commitear."
+        echo "   publish.sh NO bumpea versión — eso es responsabilidad de dev-publish.sh."
+        echo "   Si querés publicar la versión actual de package.json, export ALLOW_DIRTY_PUBLISH=1"
+        echo "   (NO recomendado — el bump es lo que distingue releases)."
+        exit 1
+    fi
+fi
+
+# Leer versión actual (ya bumpeada por dev-publish.sh)
 NEW_VERSION=$(node -p "require('./package.json').version")
-echo "✅ Nueva versión: $NEW_VERSION"
+echo "📦 Publicando versión: $NEW_VERSION"
 
 # Publicar (prepublishOnly ejecuta build + test automáticamente)
 npm publish --//npm.pkg.github.com/:_authToken="${GITHUB_TOKEN}"
 
-echo "✅ Publicado exitosamente"
+echo "✅ Publicado exitosamente ($NEW_VERSION)"
