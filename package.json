@@ -1,6 +1,6 @@
 {
   "name": "@onlemary/payment-core",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Multi-gateway payment processing package with unified abstraction for MercadoPago, Stripe, PayPal, and more",
   "type": "module",
   "main": "./dist/index.js",
@@ -62,6 +62,14 @@
     "./preapproval-storage": {
       "types": "./dist/preapproval-storage/index.d.ts",
       "import": "./dist/preapproval-storage/index.js"
+    },
+    "./magic-link-storage": {
+      "types": "./dist/magic-link-storage/index.d.ts",
+      "import": "./dist/magic-link-storage/index.js"
+    },
+    "./magic-link": {
+      "types": "./dist/magic-link/index.d.ts",
+      "import": "./dist/magic-link/index.js"
     },
     "./providers/mercadopago": {
       "types": "./dist/providers/mercadopago/index.d.ts",

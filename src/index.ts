@@ -73,6 +73,19 @@ export { createMockClient } from './testing/create-mock-client.js'
 // Prisma client (for direct DB access)
 export { getPrismaClient, disconnectPrisma } from './prisma.js'
 
+// Magic link (passwordless auth for the member portal)
+export { MagicLinkStorage } from './magic-link-storage/index.js'
+export type { MagicLinkRecord, CreateMagicLinkInput, ConsumeMagicLinkResult } from './magic-link-storage/index.js'
+export { MagicLinkService, DEFAULT_MAGIC_LINK_TTL_HOURS } from './magic-link/service.js'
+export type { IssueMagicLinkInput, IssueMagicLinkResult, ConsumeMagicLinkError } from './magic-link/service.js'
+export {
+  PORTAL_SESSION_COOKIE,
+  encodePortalSession,
+  decodePortalSession,
+  extractPortalSessionFromCookieHeader,
+} from './magic-link/portal-session.js'
+export type { PortalSessionPayload, DecodePortalSessionResult } from './magic-link/portal-session.js'
+
 // Logging
 export { ConsoleLogger, NullLogger, createLogger, getLogger, setLogger, resetLogger } from './logging/index.js'
 export { PaymentAttemptLogger } from './logging/PaymentAttemptLogger.js'

@@ -201,6 +201,29 @@ model PlatformBillingLedger {
   @@map("platform_billing_ledger")
 }
 
+/// Magic link for passwordless auth to the member payment portal.
+/// The admin (or any actor with the org admin API key) issues a magic link
+/// for a specific (orgSlug, clienteId). The member clicks the link, the token
+/// is exchanged for a signed cookie session, and the cookie authorizes
+/// access to the portal routes (e.g. /pagar/[clienteId]).
+///
+/// Generic: no reference to Lago or app-specific concepts. The orgSlug +
+/// clienteId are opaque identifiers that the consuming app resolves.
+model MagicLink {
+  id        String   @id @default(cuid())
+  orgSlug   String   @map("org_slug") @db.VarChar(255)
+  clienteId String   @map("cliente_id") @db.VarChar(255)
+  token     String   @unique @db.VarChar(128)
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([orgSlug, clienteId])
+  @@index([expiresAt])
+  @@map("magic_links")
+}
+
 /// Preapproval (recurring subscription) for automatic debit.
 /// Generic: no reference to Lago, invoices, or gym-specific concepts.
 /// Business rules live in the consuming app.
