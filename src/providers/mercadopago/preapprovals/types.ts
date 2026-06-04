@@ -18,6 +18,14 @@ export interface MPPreapprovalCreateRequest {
   /** URL to redirect after authorization */
   back_url: string;
 
+  /**
+   * URL MP will POST to when the preapproval's status changes
+   * (e.g. pending → authorized, authorized → cancelled, paused, etc.)
+   * and when an authorized_payment is created. Optional but required if
+   * the app wants to be notified of async events.
+   */
+  notification_url?: string;
+
   /** Auto-recurring configuration */
   auto_recurring: {
     /** Frequency in months (1 = monthly) */

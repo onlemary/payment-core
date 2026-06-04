@@ -328,3 +328,41 @@ model Payment {
   @@index([orgSlug, kind])
   @@map("payments")
 }
+
+/// Append-only log of every webhook the /api/payments/webhook handler
+/// receives. Persisted so we can post-mortem "why did MP send X? why
+/// didn't we handle it?" without trawling server stdout.
+///
+/// One row per incoming HTTP request. `orgSlug` may be null when the
+/// org-resolver couldn't match `user_id` to a gym — that's the most
+/// common debugging case ("unrouted webhook"). `resultStatus` is the
+/// HTTP status we returned to MP (200/4xx/5xx). `resultBody` is the
+/// JSON body we sent back.
+model WebhookEvent {
+  id            String   @id @default(uuid())
+  provider      String
+  orgSlug       String?  @map("org_slug") @db.VarChar(255)
+  /// The webhook `action` field (e.g. "payment.created",
+  /// "subscription_authorized_payment", "subscription_preapproval.updated").
+  /// null when the body had no action.
+  action        String?
+  /// The webhook `data.id` (the resource id MP is telling us about).
+  externalId    String?  @map("external_id")
+  /// The `user_id` field from the body — used by our org-resolver.
+  mpUserId      BigInt?  @map("mp_user_id")
+  /// Full incoming body, JSON-stringified. Truncated by the handler
+  /// if it exceeds a sane size (1 MB).
+  rawBody       Json     @map("raw_body")
+  /// Result of the handler: the HTTP status we returned (200, 400, 401, 500, ...).
+  resultStatus  Int      @map("result_status")
+  /// Result body we sent back to MP. JSON-stringified.
+  resultBody    Json     @map("result_body")
+  receivedAt    DateTime @default(now()) @map("received_at")
+  /// Wall-clock duration of the handler in ms.
+  durationMs    Int      @map("duration_ms")
+
+  @@index([orgSlug, receivedAt])
+  @@index([provider, action, receivedAt])
+  @@index([externalId])
+  @@map("webhook_events")
+}

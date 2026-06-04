@@ -48,6 +48,14 @@ export interface CreatePreapprovalRequest {
   externalReference: string
   payerEmail: string
   backUrl: string
+  /**
+   * URL MP will POST webhooks to when the preapproval's status changes.
+   * If omitted, MP will not send webhooks for this preapproval, and the
+   * app will not be notified when the user authorizes / pauses / cancels.
+   * Recommended: build from the same host as backUrl, e.g.
+   * `${proto}://${host}/api/payments/webhook`.
+   */
+  notificationUrl?: string
   amountCents: number
   currency?: string
   frequency?: number
@@ -78,6 +86,7 @@ export async function createPreapproval(request: CreatePreapprovalRequest): Prom
     external_reference: request.externalReference,
     payer_email: request.payerEmail,
     back_url: request.backUrl,
+    notification_url: request.notificationUrl,
     auto_recurring: {
       frequency: request.frequency || 1,
       frequency_type: request.frequencyType || 'months',

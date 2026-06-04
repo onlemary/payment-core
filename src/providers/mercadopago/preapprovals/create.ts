@@ -18,11 +18,12 @@ export async function createPreapproval(
   accessToken: string,
   request: MPPreapprovalCreateRequest
 ): Promise<MPPreapprovalResponse> {
-  logger.info('Creating MP preapproval', {
-    external_reference: request.external_reference,
-    amount: request.auto_recurring.transaction_amount,
-    frequency: request.auto_recurring.frequency,
-  });
+    logger.info('Creating MP preapproval', {
+      external_reference: request.external_reference,
+      amount: request.auto_recurring.transaction_amount,
+      frequency: request.auto_recurring.frequency,
+      has_notification_url: Boolean(request.notification_url),
+    });
 
   try {
     const client = new MercadoPagoConfig({
@@ -43,6 +44,7 @@ export async function createPreapproval(
         external_reference: request.external_reference,
         payer_email: request.payer_email,
         back_url: request.back_url,
+        notification_url: request.notification_url,
         auto_recurring: {
           frequency: request.auto_recurring.frequency,
           frequency_type: request.auto_recurring.frequency_type,
