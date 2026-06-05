@@ -148,11 +148,24 @@ export function createUnifiedWebhookHandler(
         }
       }
 
-      logger?.info('Webhook received', { provider: providerName, eventType: payload.eventType, dataId: payload.dataId })
+      // 5. Provider-specific event detection → switch. We resolve the
+      //    class up-front so we can include it in the "received" log
+      //    even for the unknown/ignored path (this is the field we
+      //    actually care about post-mortem).
+      const mpEvent = providerName === 'mercadopago' ? detectMpEvent(body) : null
+      const eventClass = mpEvent?.type ?? payload.eventType
 
-      // 5. Provider-specific event detection → switch
+      logger?.info('Webhook received', {
+        provider: providerName,
+        action: payload.eventType,
+        eventClass,
+        dataId: payload.dataId,
+      })
+
+      // 6. Provider-specific event detection → dispatch
       return await dispatch({
         providerName,
+        eventClass,
         payload,
         body,
         headers,
@@ -173,6 +186,7 @@ export function createUnifiedWebhookHandler(
 
 interface DispatchInput {
   providerName: string
+  eventClass: string
   payload: WebhookPayload
   body: unknown
   headers: Record<string, string>
@@ -181,12 +195,11 @@ interface DispatchInput {
 }
 
 async function dispatch(input: DispatchInput): Promise<WebhookHandlerResult> {
-  const { providerName, payload, body, headers, config, logger } = input
+  const { providerName, eventClass, payload, body, headers, config, logger } = input
   const cb = config.callbacks
 
   if (providerName === 'mercadopago') {
-    const mpEvent = detectMpEvent(body)
-    switch (mpEvent.type) {
+    switch (eventClass) {
       case 'payment': {
         const orgSlug = await safeResolveOrg(config, providerName, body, headers)
         if (!orgSlug) {

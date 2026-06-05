@@ -25,38 +25,58 @@ export interface MpWebhookEvent {
 /**
  * Detect the type of MercadoPago webhook event.
  *
- * MP sends different actions:
- * - "payment.created", "payment.updated" → 'payment'
- * - "transfer.created", "transfer.updated" → 'transfer'
- * - "subscription_authorized_payment" → 'subscription_authorized_payment'
- *   (dataId = authorized_payment_id; preapproval_id viene en metadata del pago)
- * - "subscription_preapproval" → 'subscription_preapproval'
- *   (dataId = preapproval_id)
- * - "plan.*", "invoice.*", etc. → 'unknown' (ignorar)
+ * Strategy: classify by checking BOTH `body.action` (the verb MP uses)
+ * and `body.type` (the resource kind). Real production MP webhooks
+ * always set both with consistent values (e.g. action="payment.created",
+ * type="payment"). The MP simulator's "Webhooks" testing tool, however,
+ * hardcodes action="updated" and only sets the type to the event we
+ * asked to test (e.g. type="subscription_preapproval").
+ *
+ * By matching on either field we cover both real production payloads
+ * AND simulator payloads, without losing precision. The two checks are
+ * equivalent for production; the `type` check is the simulator/future
+ * safety net.
+ *
+ * Resource kind → event class:
+ * - "payment"                                → 'payment'
+ *   (action is a prefix match: "payment.created", "payment.updated")
+ * - "transfer"                               → 'transfer'
+ *   (action is a prefix match: "transfer.created", "transfer.updated")
+ * - "subscription_authorized_payment"        → 'subscription_authorized_payment'
+ *   (action IS the event name, no prefix; dataId = authorized_payment_id)
+ * - "subscription_preapproval"               → 'subscription_preapproval'
+ *   (action IS the event name; dataId = preapproval_id)
+ * - anything else                            → 'unknown' (ignored)
  */
 export function detectMpEvent(body: unknown): MpWebhookEvent {
   const payload = body as Record<string, any>
   const action: string = payload?.action ?? ''
+  const type: string = payload?.type ?? ''
   const dataId: string = payload?.data?.id ?? ''
 
   if (!dataId) {
     return { type: 'unknown', dataId: '', raw: body }
   }
 
-  // Subscription events: matchear acción exacta (no son prefijos).
-  if (action === 'subscription_authorized_payment') {
+  // Subscription events: exact match on either field. The action IS the
+  // event name (no verb), so for real MP webhooks `action` is the
+  // discriminating field; for the simulator `type` is.
+  if (action === 'subscription_authorized_payment' || type === 'subscription_authorized_payment') {
     return { type: 'subscription_authorized_payment', dataId, raw: body }
   }
 
-  if (action === 'subscription_preapproval') {
+  if (action === 'subscription_preapproval' || type === 'subscription_preapproval') {
     return { type: 'subscription_preapproval', dataId, raw: body }
   }
 
-  if (action.startsWith('payment.')) {
+  // Payment & transfer: action is a verb prefix in real MP webhooks
+  // ("payment.created", "transfer.updated"). The simulator sets only
+  // `type` without the verb.
+  if (action.startsWith('payment.') || type === 'payment') {
     return { type: 'payment', dataId, raw: body }
   }
 
-  if (action.startsWith('transfer.')) {
+  if (action.startsWith('transfer.') || type === 'transfer') {
     return { type: 'transfer', dataId, raw: body }
   }
 

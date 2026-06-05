@@ -353,6 +353,13 @@ model WebhookEvent {
   /// Full incoming body, JSON-stringified. Truncated by the handler
   /// if it exceeds a sane size (1 MB).
   rawBody       Json     @map("raw_body")
+  /// Incoming HTTP headers, JSON-stringified. Includes x-signature and
+  /// x-request-id from MP. Persisted in full because (a) x-signature is
+  /// an HMAC one-way, (b) we want to be able to re-verify the signature
+  /// post-mortem if MP disputes a delivery. Nullable for backward-compat
+  /// with rows written before this column existed; in practice the route
+  /// always sets it.
+  headers       Json?    @map("headers")
   /// Result of the handler: the HTTP status we returned (200, 400, 401, 500, ...).
   resultStatus  Int      @map("result_status")
   /// Result body we sent back to MP. JSON-stringified.
