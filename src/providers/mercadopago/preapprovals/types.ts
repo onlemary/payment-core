@@ -154,8 +154,8 @@ export interface MPPreapprovalUpdateRequest {
   /** New reason */
   reason?: string;
 
-  /** New status (for pause/resume) */
-  status?: 'paused' | 'authorized';
+  /** New status (for pause/resume/cancel) */
+  status?: 'paused' | 'authorized' | 'cancelled';
 
   /** Additional metadata */
   metadata?: Record<string, any>;

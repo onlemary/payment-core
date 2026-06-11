@@ -125,7 +125,7 @@ export async function createPreapproval(request: CreatePreapprovalRequest): Prom
   return { preapproval, initPoint: mpResponse.init_point }
 }
 
-export async function getPreapproval(orgSlug: string, externalId: string): Promise<MPPreapprovalResponse> {
+export async function syncPreapproval(orgSlug: string, externalId: string): Promise<MPPreapprovalResponse> {
   const token = await getMpTokenForOrg(orgSlug)
 
   const mpResponse = await mpGetPreapproval(token.accessToken, externalId)
@@ -137,6 +137,15 @@ export async function getPreapproval(orgSlug: string, externalId: string): Promi
   })
 
   return mpResponse
+}
+
+/**
+ * Pure read: retrieves a preapproval from local storage.
+ * No side effects — does not call MP API.
+ * Returns null if not found.
+ */
+export async function getPreapproval(orgSlug: string, externalId: string): Promise<PreapprovalRecord | null> {
+  return storage.getPreapprovalByExternalId(orgSlug, externalId)
 }
 
 export async function updatePreapprovalAmount(

@@ -347,7 +347,7 @@ describe('PaymentClient advanced branches', () => {
     const client = new PaymentClient(config)
     await client.initialize()
     expect(client.supportsFeature('mercadopago', 'supportsOAuth')).toBe(true)
-    expect(client.supportsFeature('mercadopago', 'supportsRecurring')).toBe(false)
+    expect(client.supportsFeature('mercadopago', 'supportsRecurring')).toBe(true)
     await client.close()
   })
 

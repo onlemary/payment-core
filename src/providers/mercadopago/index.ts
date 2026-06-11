@@ -31,8 +31,7 @@ const MP_FEATURES: ProviderFeatures = {
  supportsMarketplace: true,
  supportsCapture: false,
  supportsVoid: false,
- supportsPartialRefund: true,
- supportsRecurring: false,
+ supportsPartialRefund: true,  supportsRecurring: true,
  supportedCurrencies: ['ARS', 'BRL', 'MXN', 'CLP', 'COP', 'PEN', 'UYU'],
 }
 

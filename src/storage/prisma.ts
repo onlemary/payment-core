@@ -13,7 +13,7 @@ export class PrismaStorage implements TokenStorage {
     const prisma = getPrismaClient()
     const record = data as any
 
-    if (provider === 'mercadopago' && key.startsWith('gym_')) {
+    if (provider === 'mercadopago') {
       const userId = BigInt(record.userId ?? 0)
       const existing = await prisma.oAuthToken.findUnique({ where: { userId } })
 
@@ -37,7 +37,7 @@ export class PrismaStorage implements TokenStorage {
   async get<T = unknown>(provider: string, key: string): Promise<T | null> {
     const prisma = getPrismaClient()
 
-    if (provider === 'mercadopago' && key.startsWith('gym_')) {
+    if (provider === 'mercadopago') {
       const token = await prisma.oAuthToken.findFirst({
         where: { orgSlug: key },
       })
@@ -59,7 +59,7 @@ export class PrismaStorage implements TokenStorage {
   async delete(provider: string, key: string): Promise<boolean> {
     const prisma = getPrismaClient()
 
-    if (provider === 'mercadopago' && key.startsWith('gym_')) {
+    if (provider === 'mercadopago') {
       const token = await prisma.oAuthToken.findFirst({
         where: { orgSlug: key },
       })
@@ -98,7 +98,7 @@ export class PrismaStorage implements TokenStorage {
   async exists(provider: string, key: string): Promise<boolean> {
     const prisma = getPrismaClient()
 
-    if (provider === 'mercadopago' && key.startsWith('gym_')) {
+    if (provider === 'mercadopago') {
       const count = await prisma.oAuthToken.count({
         where: { orgSlug: key },
       })
@@ -127,7 +127,7 @@ export class PrismaStorage implements TokenStorage {
   ): Promise<void> {
     const prisma = getPrismaClient()
 
-    if (provider === 'mercadopago' && key.startsWith('gym_')) {
+    if (provider === 'mercadopago') {
       const token = await prisma.oAuthToken.findFirst({
         where: { orgSlug: key },
       })
