@@ -1,6 +1,6 @@
 {
   "name": "@onlemary/payment-core",
-  "version": "0.6.13",
+  "version": "0.6.14",
   "description": "Multi-gateway payment processing package with unified abstraction for MercadoPago, Stripe, PayPal, and more",
   "type": "module",
   "main": "./dist/index.js",
@@ -137,6 +137,9 @@
     "LICENSE",
     ".env.payment.example"
   ],
+  "bin": {
+    "payment-core-db-setup": "./dist/db-setup.js"
+  },
   "scripts": {
     "build": "prisma generate && tsc -p tsconfig.json",
     "dev": "tsc --watch",
@@ -144,7 +147,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "postinstall": "sh scripts/postinstall.sh",
+    "db:setup": "node dist/db-setup.js",
     "prepublishOnly": "npm run build && npm test",
     "dev:publish": "bash dev-publish.sh"
   },
