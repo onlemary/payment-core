@@ -141,7 +141,7 @@
     "payment-core-db-setup": "./dist/db-setup.js"
   },
   "scripts": {
-    "build": "prisma generate && tsc -p tsconfig.json",
+    "build": "rm -rf dist && prisma generate && tsc -p tsconfig.json",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
