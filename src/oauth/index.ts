@@ -41,3 +41,6 @@ export {
 // Export handler
 export type { GenericOAuthCallbackHandler } from './callback-handler.js'
 export { createGenericOAuthCallbackHandler } from './callback-handler.js'
+
+// Export signed-state helpers (single owner of the OAuth state format)
+export { signState, verifyState } from './state.js'

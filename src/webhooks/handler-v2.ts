@@ -87,8 +87,9 @@ export interface WebhookHandlerConfig {
   callbacks: UnifiedWebhookCallbacks
   /**
    * Resolve orgSlug from the webhook payload. Required for MP (uses user_id)
-   * and Stripe (uses account id). For MP transfer events, may need to scan
-   * all orgs — return null and the handler will mark as ignored.
+   * and Stripe (uses account id). Applies uniformly to every MP event class
+   * (payment, subscription, transfer): if it returns null the handler marks
+   * the event as ignored (no silent fallback / directory scan).
    */
   resolveOrg?: (provider: string, body: unknown, headers: Record<string, string>) => Promise<string | null>
   logger?: Logger | null
@@ -215,10 +216,19 @@ async function dispatch(input: DispatchInput): Promise<WebhookHandlerResult> {
         }
       }
       case 'transfer': {
-        // Transfers are scanned across orgs (per-org transfer code).
-        // The callback handles the org resolution itself; we just dispatch.
+        // Resolve the org by user_id, exactly like payment/subscription.
+        // The transfer webhook's top-level user_id identifies the collector
+        // account (the gym connected via OAuth), so resolution is
+        // deterministic. NO directory scan / fallback: if it doesn't
+        // resolve, we mark it ignored (visible in webhook_events with
+        // orgSlug=null) instead of guessing.
+        const orgSlug = await safeResolveOrg(config, providerName, body, headers)
+        if (!orgSlug) {
+          await invoke(cb.onIgnored, { reason: 'no_org_for_transfer', eventType: payload.eventType, provider: providerName })
+          return { status: 200, body: { received: true, ignored: 'no_org' } }
+        }
         try {
-          await invoke(cb.onTransfer, { orgSlug: '', dataId: payload.dataId, provider: providerName, headers, raw: body })
+          await invoke(cb.onTransfer, { orgSlug, dataId: payload.dataId, provider: providerName, headers, raw: body })
           return { status: 200, body: { received: true } }
         } catch (err) {
           logger?.error('onTransfer callback failed', { error: String(err) })

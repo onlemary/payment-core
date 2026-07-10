@@ -131,22 +131,42 @@ describe('MercadoPagoProvider', () => {
     })
 
     it('oauth.handleCallback should exchange code for tokens', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          access_token: 'new_access',
-          refresh_token: 'new_refresh',
-          user_id: 55555,
-          expires_in: 21600,
-        }),
-      }))
+      // handleCallback does two steps:
+      //   1) authorization_code grant → tokens (no public_key)
+      //   2) refresh_token grant      → rotated tokens + public_key (required)
+      // Step 1 returns the initial tokens; step 2 returns the rotated tokens
+      // plus the public_key that the atomic connection requires.
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            access_token: 'auth_access',
+            refresh_token: 'auth_refresh',
+            user_id: 55555,
+            expires_in: 21600,
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            access_token: 'new_access',
+            refresh_token: 'new_refresh',
+            user_id: 55555,
+            expires_in: 21600,
+            public_key: 'APP_USR-public-key-123',
+          }),
+        })
+      vi.stubGlobal('fetch', fetchMock)
 
       await provider.initialize(config, storage)
       const api = provider.getProviderAPI()
       const result = await api.oauth.handleCallback('auth_code', 'seller1', 'https://x.com/cb')
+      // Final tokens come from the refresh (step 2), which rotates both tokens
       expect(result.accessToken).toBe('new_access')
       expect(result.refreshToken).toBe('new_refresh')
       expect(result.userId).toBe(55555)
+      expect(result.publicKey).toBe('APP_USR-public-key-123')
+      expect(fetchMock).toHaveBeenCalledTimes(2)
     })
 
     it('oauth.getStatus should return disconnected for unknown seller', async () => {

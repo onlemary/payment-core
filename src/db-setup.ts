@@ -1,8 +1,18 @@
+#!/usr/bin/env node
 /**
- * postinstall — corre automáticamente después de npm install.
+ * db-setup — comando EXPLÍCITO de provisión de DB (bin: payment-core-db-setup).
+ *
+ * Corre CUANDO la app lo invoca a propósito (no en npm install).
  * Busca .env.payment walkeando hacia arriba desde su propio directorio,
- * lo carga, crea la database si no existe y sincroniza el schema.
+ * lo carga (env autocontenida — el dominio es dueño de su config),
+ * valida la URL TEMPRANO y de forma RUIDOSA, crea la database si no existe
+ * y sincroniza el schema.
+ *
  * Idempotente: la segunda vez no hace nada.
+ *
+ * A diferencia del viejo postinstall: este comando FALLA RUIDOSO (exit 1)
+ * ante una URL faltante/malformada/con variables sin resolver, porque es el
+ * momento correcto para fallar (la app lo llama con la env completa).
  *
  * Prisma v7+ no soporta datasources en el constructor de PrismaClient,
  * por eso usamos pg.Pool directamente para crear la DB.
@@ -87,37 +97,52 @@ if (envFile) {
   log(`Cargado: ${envFile}`)
 }
 
-// ── Lógica de creación de DB ─────────────────────────────────────
+// ── Helper: enmascara credenciales al loguear la URL ─────────────
+
+function maskUrl(u: string) {
+  return u.replace(/:\/\/.*@/, '://<credentials>@')
+}
+
+// ── Validación TEMPRANA y RUIDOSA de la URL ──────────────────────
+// Este comando es explícito: si la URL falta o está mal, es el momento
+// correcto para fallar ruidoso (exit 1), no para tragarse el error.
 
 const url = process.env.PAYMENT_CORE_DB_URL
 
 if (!url) {
   logBlock(`
 ╔══════════════════════════════════════════════════════════════╗
-║  @onlemary/payment-core — AVISO                              ║
+║  @onlemary/payment-core — db:setup                          ║
 ╠══════════════════════════════════════════════════════════════╣
-║  No se encontró PAYMENT_CORE_DB_URL (ni .env.payment).      ║
+║  ❌ Falta PAYMENT_CORE_DB_URL (ni en el entorno ni en        ║
+║     .env.payment).                                           ║
 ║                                                              ║
-║  ▶ Solución rápida:                                          ║
+║  ▶ Solución:                                                 ║
 ║    1. Copiá .env.payment.example → .env.payment             ║
-║    2. Completá tus valores                                   ║
-║    3. Reinstalá el paquete                                    ║
-║                                                              ║
-║  ▶ También podés ejecutar manualmente:                       ║
-║    npx prisma db push --schema=node_modules/@onlemary/       ║
-║    payment-core/prisma/schema.prisma                         ║
-║                                                              ║
-║  ⚠️ PAYMENT_CORE_DB_URL es obligatoria. Sin ella, el        ║
-║    validador @onlemary/payment-core va a THROW al           ║
-║    instanciar un PaymentClient (fail-fast en constructor).  ║
+║    2. Completá PAYMENT_CORE_DB_URL con un valor LITERAL      ║
+║       (sin variables \${...} de otros dominios).            ║
+║    3. Volvé a correr: payment-core-db-setup                  ║
 ╚══════════════════════════════════════════════════════════════╝
 `)
-  process.exit(0)
+  process.exit(1)
 }
 
-function maskUrl(u: string) {
-  return u.replace(/:\/\/.*@/, '://<credentials>@')
+// Variables de shell sin resolver (ej. ${LAGO_DB_PORT}) → env NO autocontenida.
+if (url.includes('${')) {
+  log(`❌ PAYMENT_CORE_DB_URL contiene variables sin resolver: ${maskUrl(url)}`)
+  log('   La env de payment-core debe ser AUTOCONTENIDA: usá valores literales,')
+  log('   no referencias como ${LAGO_DB_PORT} que pertenecen a otro dominio.')
+  process.exit(1)
 }
+
+try {
+  new URL(url)
+} catch {
+  log(`❌ PAYMENT_CORE_DB_URL malformada: ${maskUrl(url)}`)
+  process.exit(1)
+}
+
+// ── Lógica de creación de DB ─────────────────────────────────────
 
 const dbName = url.split('/').pop()?.split('?')[0] || 'payment_core'
 const maintenanceUrl = url.replace(/\/[^/?]+(?=\?|$)/, '/postgres')

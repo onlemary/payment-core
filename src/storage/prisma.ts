@@ -17,6 +17,17 @@ export class PrismaStorage implements TokenStorage {
       const userId = BigInt(record.userId ?? 0)
       const existing = await prisma.oAuthToken.findUnique({ where: { userId } })
 
+      // Uniqueness: a MercadoPago user_id maps to exactly ONE org. Since
+      // `userId` is the PK, an update would silently overwrite the org_slug
+      // of a different org. Reject that instead of stealing the connection.
+      // Reconnecting the SAME org (existing.orgSlug === key) is allowed.
+      if (existing && existing.orgSlug !== key) {
+        throw new Error(
+          `MercadoPago user_id ${userId} is already connected to org "${existing.orgSlug}"; ` +
+            `cannot connect it to "${key}". Disconnect the other org first.`
+        )
+      }
+
       const tokenData = {
         orgSlug: key,
         accessToken: record.accessToken ?? '',

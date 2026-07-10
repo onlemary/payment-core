@@ -55,14 +55,6 @@ model PendingTransfer {
   @@map("pending_transfers")
 }
 
-model MpUserOrg {
-  mpUserId  BigInt   @id @map("mp_user_id")
-  orgSlug   String   @map("org_slug") @db.VarChar(255)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("mp_user_orgs")
-}
-
 model OrgPaymentConfig {
   orgSlug           String  @id @map("org_slug") @db.VarChar(255)
   bankName          String? @map("bank_name")

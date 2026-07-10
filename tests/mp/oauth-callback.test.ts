@@ -29,17 +29,30 @@ describe('handleCallback', () => {
     globalThis.fetch = originalFetch
   })
 
-  it('should exchange code for tokens and store them', async () => {
-    // Mock fetch to return a successful OAuth response
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        access_token: 'APP_USR_access_123',
-        refresh_token: 'TG-refresh_456',
-        user_id: 123456789,
-        expires_in: 21600, // 6 hours
-      }),
-    })
+  it('should exchange code, refresh for public_key, and store the refreshed tokens', async () => {
+    // Atomic connection: step 1 = authorization_code, step 2 = refresh (returns public_key)
+    globalThis.fetch = vi.fn()
+      // Step 1: authorization_code grant (no public_key)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'APP_USR_access_123',
+          refresh_token: 'TG-refresh_456',
+          user_id: 123456789,
+          expires_in: 21600, // 6 hours
+        }),
+      })
+      // Step 2: refresh_token grant (rotates tokens + returns public_key)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'APP_USR_access_ROTATED',
+          refresh_token: 'TG-refresh_ROTATED',
+          user_id: 123456789,
+          expires_in: 21600,
+          public_key: 'APP_USR-public-key-abc',
+        }),
+      })
 
     const result = await handleCallback(
       'client_id_1',
@@ -50,7 +63,8 @@ describe('handleCallback', () => {
       storage
     )
 
-    // Verify fetch was called correctly
+    // Verify both fetches happened (step 1 auth + step 2 refresh)
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2)
     expect(globalThis.fetch).toHaveBeenCalledWith(
       'https://api.mercadopago.com/oauth/token',
       expect.objectContaining({
@@ -59,25 +73,93 @@ describe('handleCallback', () => {
       })
     )
 
-    // Verify the request body
-    const callArgs = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1]
-    const body = JSON.parse(callArgs.body)
-    expect(body.grant_type).toBe('authorization_code')
-    expect(body.client_id).toBe('client_id_1')
-    expect(body.client_secret).toBe('client_secret_1')
-    expect(body.code).toBe('auth_code_abc')
-    expect(body.redirect_uri).toBe('https://example.com/callback')
+    // Verify the step 1 request body (authorization_code grant)
+    const authArgs = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1]
+    const authBody = JSON.parse(authArgs.body)
+    expect(authBody.grant_type).toBe('authorization_code')
+    expect(authBody.client_id).toBe('client_id_1')
+    expect(authBody.client_secret).toBe('client_secret_1')
+    expect(authBody.code).toBe('auth_code_abc')
+    expect(authBody.redirect_uri).toBe('https://example.com/callback')
 
-    // Verify returned tokens
-    expect(result.accessToken).toBe('APP_USR_access_123')
-    expect(result.refreshToken).toBe('TG-refresh_456')
+    // Verify the step 2 request body (refresh_token grant)
+    const refreshArgs = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[1][1]
+    const refreshBody = JSON.parse(refreshArgs.body)
+    expect(refreshBody.grant_type).toBe('refresh_token')
+    expect(refreshBody.refresh_token).toBe('TG-refresh_456')
+
+    // Verify returned tokens are the ROTATED ones from step 2, with public_key
+    expect(result.accessToken).toBe('APP_USR_access_ROTATED')
+    expect(result.refreshToken).toBe('TG-refresh_ROTATED')
     expect(result.userId).toBe(123456789)
+    expect(result.publicKey).toBe('APP_USR-public-key-abc')
     expect(result.expiresAt).toBeInstanceOf(Date)
     expect(result.connectedAt).toBeInstanceOf(Date)
 
-    // Verify storage save was called with correct namespace
+    // Verify storage save was called with the refreshed tokens (incl. public_key)
     expect(savedData).not.toBeNull()
-    expect((savedData as Record<string, unknown>).accessToken).toBe('APP_USR_access_123')
+    expect((savedData as Record<string, unknown>).accessToken).toBe('APP_USR_access_ROTATED')
+    expect((savedData as Record<string, unknown>).publicKey).toBe('APP_USR-public-key-abc')
+  })
+
+  it('should throw and persist nothing when the refresh (step 2) fails', async () => {
+    // Atomic connection (Option A): a failed refresh means no public_key → no connection.
+    globalThis.fetch = vi.fn()
+      // Step 1: authorization_code grant succeeds
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'APP_USR_access_123',
+          refresh_token: 'TG-refresh_456',
+          user_id: 123456789,
+          expires_in: 21600,
+        }),
+      })
+      // Step 2: refresh fails (e.g. transient MP error / revoked refresh token)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => '{"message":"internal_error"}',
+      })
+
+    await expect(
+      handleCallback('client1', 'secret1', 'code', 'seller1', 'https://x.com', storage)
+    ).rejects.toThrow(/refresh to obtain public_key failed \(500\)/)
+
+    // No orphaned "connected but can't charge" state should be persisted
+    expect(savedData).toBeNull()
+  })
+
+  it('should throw and persist nothing when refresh is OK but has no public_key', async () => {
+    // Same logical outcome as a failed refresh: "missing key" → no connection.
+    globalThis.fetch = vi.fn()
+      // Step 1: authorization_code grant succeeds
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'APP_USR_access_123',
+          refresh_token: 'TG-refresh_456',
+          user_id: 123456789,
+          expires_in: 21600,
+        }),
+      })
+      // Step 2: refresh succeeds but MP omits public_key
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'APP_USR_access_ROTATED',
+          refresh_token: 'TG-refresh_ROTATED',
+          user_id: 123456789,
+          expires_in: 21600,
+          // no public_key
+        }),
+      })
+
+    await expect(
+      handleCallback('client1', 'secret1', 'code', 'seller1', 'https://x.com', storage)
+    ).rejects.toThrow(/public_key was not present in the response/)
+
+    expect(savedData).toBeNull()
   })
 
   it('should throw on failed token exchange', async () => {

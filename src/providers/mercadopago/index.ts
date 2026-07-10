@@ -213,9 +213,8 @@ export default class MercadoPagoProvider implements PaymentProvider {
  const storage = this.storage
 
  return {
- oauth: {
- getConnectUrl: (sellerId: string, redirectUri: string) => {
- return getConnectUrl(this.clientId, sellerId, redirectUri)
+ oauth: {        getConnectUrl: (sellerId: string, redirectUri: string) => {
+ return getConnectUrl(this.clientId, sellerId, redirectUri, this.webhookSecret)
  },          handleCallback: (code: string, sellerId: string, redirectUri: string) => {
             return handleCallback(this.clientId, this.clientSecret, code, sellerId, redirectUri, storage, this.logger, this.oauthTestMode)
           },

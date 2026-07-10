@@ -20,7 +20,13 @@ import type { TokenStorage } from '../../../storage/types.js'
  * - the tokens from step 1 are invalidated
  * - public_key is only available from step 2
  *
- * Throws on failure (setup operation).
+ * Atomic connection (Issue 5, Option A): connecting is all-or-nothing. The
+ * refresh here is NOT maintenance — it is the step that obtains the public_key,
+ * which is required for the member checkout to tokenize cards. If we finish
+ * WITHOUT a public_key, there is no usable connection, so we throw and persist
+ * nothing (no orphaned "connected but can't charge" state). "Missing key" is a
+ * single logical outcome; the thrown error distinguishes the underlying reason
+ * (refresh HTTP failure vs. refresh OK but no public_key) only to aid debugging.
  */
 export async function handleCallback(
  clientId: string,
@@ -76,31 +82,23 @@ export async function handleCallback(
  grant_type: 'refresh_token',
  client_id: clientId,
  client_secret: clientSecret,
- refresh_token: authData.refresh_token,
- ...(testToken ? { test_token: true } : {}),
+ refresh_token: authData.refresh_token,    ...(testToken ? { test_token: true } : {}),
  }),
  })
 
- if (!refreshResponse.ok) {
- const errorBody = await refreshResponse.text()
- // If refresh fails, we still have valid tokens from step 1 — save those without public_key
- logger?.warn('OAuth: refresh failed to obtain public_key, saving tokens without publicKey', {
- sellerId,
- status: refreshResponse.status,
- body: errorBody,
- })
-
- const fallbackTokens: SellerTokens = {
- accessToken: authData.access_token,
- refreshToken: authData.refresh_token,
- userId: authData.user_id,
- expiresAt: new Date(Date.now() + authData.expires_in * 1000),
- connectedAt: new Date(),
- }
-
- await storage.save('mercadopago', sellerId, fallbackTokens)
- return fallbackTokens
- }
+  if (!refreshResponse.ok) {
+    // Atomic connection: without the public_key there is no usable connection.
+    // Persist nothing and fail visibly so the gym can retry from the connect screen.
+    const errorBody = await refreshResponse.text()
+    logger?.error('OAuth: refresh failed to obtain public_key — aborting connection', {
+      sellerId,
+      status: refreshResponse.status,
+      body: errorBody,
+    })
+    throw new Error(
+      `OAuth connection incomplete: refresh to obtain public_key failed (${refreshResponse.status}): ${errorBody}`
+    )
+  }
 
  const refreshData = (await refreshResponse.json()) as {
  access_token: string
@@ -110,27 +108,35 @@ export async function handleCallback(
  public_key?: string
  }
 
- // Build final tokens from refresh response (step 2)
- // These are the CURRENT valid tokens — step 1 tokens are now rotated
- const tokens: SellerTokens = {
- accessToken: refreshData.access_token,
- refreshToken: refreshData.refresh_token,
- userId: refreshData.user_id ?? authData.user_id,
- expiresAt: new Date(Date.now() + (refreshData.expires_in ?? authData.expires_in) * 1000),
- connectedAt: new Date(),
- publicKey: refreshData.public_key,
- }
+  // Atomic connection: refresh succeeded but MP did not return a public_key.
+  // Same logical outcome as a failed refresh ("missing key" → no connection);
+  // the distinct message just helps distinguish the cause when debugging.
+  if (!refreshData.public_key) {
+    logger?.error('OAuth: refresh OK but public_key missing in response — aborting connection', {
+      sellerId,
+    })
+    throw new Error(
+      'OAuth connection incomplete: refresh succeeded but public_key was not present in the response'
+    )
+  }
 
- if (refreshData.public_key) {
- logger?.info('OAuth: public_key obtained successfully', { sellerId })
- } else {
- logger?.warn('OAuth: refresh succeeded but public_key was not in response', { sellerId })
- }
+  // Build final tokens from refresh response (step 2)
+  // These are the CURRENT valid tokens — step 1 tokens are now rotated
+  const tokens: SellerTokens = {
+    accessToken: refreshData.access_token,
+    refreshToken: refreshData.refresh_token,
+    userId: refreshData.user_id ?? authData.user_id,
+    expiresAt: new Date(Date.now() + (refreshData.expires_in ?? authData.expires_in) * 1000),
+    connectedAt: new Date(),
+    publicKey: refreshData.public_key,
+  }
 
- // Store in provider-namespaced storage
- await storage.save('mercadopago', sellerId, tokens)
+  logger?.info('OAuth: public_key obtained successfully', { sellerId })
 
- return tokens
+  // Store in provider-namespaced storage
+  await storage.save('mercadopago', sellerId, tokens)
+
+  return tokens
 }
 
 /**

@@ -16,7 +16,7 @@
 import type { SellerTokens } from '../../../types.js'
 import type { RouteInput, RouteOutput, GetClientFunction, Logger } from '../../../types.js'
 import { createGenericOAuthCallbackHandler } from '../../../oauth/callback-handler.js'
-import type { OAuthCallbackHandlerOptions } from '../../../oauth/types.js'
+import type { OAuthCallbackHandlerOptions, OAuthCallbackParams } from '../../../oauth/types.js'
 
 /**
  * MercadoPago-specific OAuth callback options.
@@ -65,6 +65,26 @@ export interface MercadoPagoOAuthCallbackOptions<TIdentifier = string> {
     error: string,
     errorDescription?: string
   ) => string | URL | Promise<string | URL>
+
+  /**
+   * Deriva el identificador (ej. orgSlug) a partir de los parámetros del callback.
+   *
+   * OPCIONAL. Por defecto el identificador se toma de `params.state`.
+   *
+   * Es necesario cuando el `state` NO es el identificador plano sino un TOKEN
+   * FIRMADO (ej. `orgSlug:exp:hmac`, ver oauth/state.ts): en ese caso el `state`
+   * ya no sirve como identificador y debe derivarse de una fuente CONFIABLE
+   * (ej. el orgSlug del path de la ruta, que la app tiene en scope). El `state`
+   * crudo se sigue pasando a `validateState` para verificar su integridad.
+   *
+   * @param params - Parámetros extraídos del callback OAuth.
+   * @returns Identificador limpio y confiable para el resto del flujo.
+   *
+   * @example
+   * // Path-based: el orgSlug viene de la URL, no del state firmado.
+   * extractIdentifier: () => orgSlug
+   */
+  extractIdentifier?: (params: OAuthCallbackParams) => TIdentifier
 }
 
 /**
@@ -166,8 +186,11 @@ export function createMercadoPagoOAuthCallbackHandler<TIdentifier = string>(
 
       // 2. Check for MercadoPago errors
       if (params.error) {
-        // Extract identifier from state
-        const identifier = params.state as TIdentifier | undefined
+        // Derive identifier: prefer the trusted source (extractIdentifier),
+        // fall back to the raw state for backward compatibility.
+        const identifier = (options.extractIdentifier
+          ? options.extractIdentifier(params)
+          : (params.state as TIdentifier | undefined)) as TIdentifier | undefined
         if (!identifier) {
           throw new Error('Missing state parameter in error response')
         }
@@ -199,9 +222,14 @@ export function createMercadoPagoOAuthCallbackHandler<TIdentifier = string>(
         throw new Error('Missing required parameter: state')
       }
 
-      const identifier = params.state as TIdentifier
+      // Derive identifier: prefer the trusted source (extractIdentifier),
+      // fall back to the raw state for backward compatibility.
+      const identifier = options.extractIdentifier
+        ? options.extractIdentifier(params)
+        : (params.state as TIdentifier)
 
       // 4. Validate state using generic handler - REQUIRED
+      // NOTE: validateState receives the RAW state (signed token) + the clean identifier.
       const isValid = await genericHandler.validateState(params.state, identifier)
       if (!isValid) {
         logger?.warn('State validation failed', {
@@ -244,7 +272,9 @@ export function createMercadoPagoOAuthCallbackHandler<TIdentifier = string>(
       // Try to extract identifier for error callback
       try {
         const params = genericHandler.extractParams(input)
-        const identifier = params.state as TIdentifier | undefined
+        const identifier = (options.extractIdentifier
+          ? options.extractIdentifier(params)
+          : (params.state as TIdentifier | undefined)) as TIdentifier | undefined
 
         if (identifier) {
           const redirectUrl = await genericHandler.handleError(

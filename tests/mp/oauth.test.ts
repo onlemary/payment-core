@@ -3,26 +3,38 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { getConnectUrl } from '../../src/providers/mercadopago/oauth/connect.js'
 import { getOAuthStatus } from '../../src/providers/mercadopago/oauth/status.js'
+import { verifyState } from '../../src/oauth/state.js'
 import type { SellerTokens } from '../../src/types.js'
 import { createMockStorage } from '../helpers/mock-storage.js'
 
 describe('getConnectUrl', () => {
+  const SECRET = 'test_state_secret'
+
   it('should build a valid OAuth URL', () => {
-    const url = getConnectUrl('client123', 'seller456', 'https://example.com/callback')
+    const url = getConnectUrl('client123', 'seller456', 'https://example.com/callback', SECRET)
     expect(url).toContain('auth.mercadopago.com/authorization')
     expect(url).toContain('client_id=client123')
     expect(url).toContain('response_type=code')
-    expect(url).toContain('state=seller456')
+    expect(url).toContain('state=')
     expect(url).toContain('redirect_uri=')
   })
 
+  it('should sign the state (HMAC) so it verifies against the seller/orgSlug', () => {
+    const url = getConnectUrl('client123', 'seller456', 'https://example.com/callback', SECRET)
+    const state = new URL(url).searchParams.get('state')!
+    expect(state).not.toBe('seller456') // ya no es texto plano
+    expect(verifyState(state, 'seller456', SECRET)).toBe(true)
+    expect(verifyState(state, 'otro_org', SECRET)).toBe(false)
+    expect(verifyState(state, 'seller456', 'wrong_secret')).toBe(false)
+  })
+
   it('should URL-encode the redirect URI', () => {
-    const url = getConnectUrl('client123', 'seller1', 'https://example.com/callback?extra=param')
+    const url = getConnectUrl('client123', 'seller1', 'https://example.com/callback?extra=param', SECRET)
     expect(url).toContain('redirect_uri=https%3A%2F%2Fexample.com')
   })
 
   it('should include platform_id=mp', () => {
-    const url = getConnectUrl('client123', 'seller1', 'https://example.com/cb')
+    const url = getConnectUrl('client123', 'seller1', 'https://example.com/cb', SECRET)
     expect(url).toContain('platform_id=mp')
   })
 })
