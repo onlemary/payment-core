@@ -21,6 +21,7 @@ import React from 'react'
 import { CountdownTimer } from './countdown-timer'
 import { QRDisplay } from './qr-display'
 import { PaymentStatusBadge } from './payment-status-badge'
+import { Modal } from './modal.js'
 import type { CheckoutSession } from '../checkout/types'
 
 export interface CheckoutModalProps {
@@ -214,54 +215,54 @@ export function CheckoutModal({
   const showCancelButton = onCancel && !['completed', 'cancelled'].includes(session.status)
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="checkout-modal-title"
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      labelledBy="checkout-modal-title"
+      className={`max-w-2xl w-full max-h-[90vh] overflow-y-auto ${className}`}
+      closeOnOverlayClick={false}
+      closeOnEscape={false}
     >
-      <div className={`bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${className}`}>
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b">
-          <h2 id="checkout-modal-title" className="text-2xl font-bold">
-            {title}
-          </h2>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl leading-none p-1"
-              aria-label="Cerrar modal"
-            >
-              ×
-            </button>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {renderContent()}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-2 p-6 border-t">
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
-            >
-              Cerrar
-            </button>
-          )}
-          {showCancelButton && (
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-            >
-              Cancelar pago
-            </button>
-          )}
-        </div>
+      {/* Header */}
+      <div className="flex justify-between items-center p-6 border-b">
+        <h2 id="checkout-modal-title" className="text-2xl font-bold">
+          {title}
+        </h2>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none p-1"
+            aria-label="Cerrar modal"
+          >
+            ×
+          </button>
+        )}
       </div>
-    </div>
+
+      {/* Content */}
+      <div className="p-6">
+        {renderContent()}
+      </div>
+
+      {/* Footer */}
+      <div className="flex justify-end gap-2 p-6 border-t">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
+          >
+            Cerrar
+          </button>
+        )}
+        {showCancelButton && (
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          >
+            Cancelar pago
+          </button>
+        )}
+      </div>
+    </Modal>
   )
 }
