@@ -45,6 +45,25 @@ if [ -f "$PROJECT_ROOT/gym/.env.secrets" ]; then
     set +a
 fi
 
+# Cargar PAYMENT_CORE_DB_URL desde gym/.env.payment (Postgres de Lago, base payment_core).
+# `npm publish` dispara prepublishOnly → build + test, y esos tests usan Prisma
+# contra esa DB. Sin la variable fallan con "Prisma requires PAYMENT_CORE_DB_URL".
+# Solo como fallback: si ya viene exportada (ej. desde dev-publish.sh) no la pisamos.
+if [ -z "${PAYMENT_CORE_DB_URL:-}" ]; then
+    ENV_PAYMENT="$PROJECT_ROOT/gym/.env.payment"
+    if [ -f "$ENV_PAYMENT" ]; then
+        set -a
+        source <(grep '^PAYMENT_CORE_DB_URL' "$ENV_PAYMENT" | sed 's/\r$//')
+        set +a
+    else
+        echo "⚠️  gym/.env.payment no encontrado — los tests (prepublishOnly) pueden fallar si PAYMENT_CORE_DB_URL no está seteada"
+    fi
+fi
+# vitest.config.ts hace fallback entre PAYMENT_CORE_DB_URL y DATABASE_URL — reflejamos si falta.
+if [ -z "${DATABASE_URL:-}" ] && [ -n "${PAYMENT_CORE_DB_URL:-}" ]; then
+    export DATABASE_URL="$PAYMENT_CORE_DB_URL"
+fi
+
 cd "$PAYMENT_DIR"
 
 # Verificar si tenemos GITHUB_TOKEN

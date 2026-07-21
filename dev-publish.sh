@@ -26,6 +26,8 @@ set -e
 BUMP_TYPE=${1:-patch}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PACKAGES_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(dirname "$PACKAGES_DIR")"
 cd "$SCRIPT_DIR"
 
 echo "📦 Publicando nueva versión de @onlemary/payment-core..."
@@ -38,6 +40,27 @@ echo "📌 Versión actual: $CURRENT_VERSION"
 npm version "$BUMP_TYPE" --no-git-tag-version
 NEW_VERSION=$(node -p "require('./package.json').version")
 echo "📌 Nueva versión: $NEW_VERSION"
+
+# Cargar PAYMENT_CORE_DB_URL desde gym/.env.payment (Postgres de Lago, base payment_core).
+# Los tests corren Prisma contra esa DB (acá con `npm test` y de nuevo en
+# publish.sh vía prepublishOnly). Sin la variable fallan con
+# "Prisma requires PAYMENT_CORE_DB_URL" — antes fallaba silenciosamente porque
+# el script nunca cargaba este .env. Solo como fallback: respetamos un
+# PAYMENT_CORE_DB_URL ya exportado en el entorno.
+if [ -z "${PAYMENT_CORE_DB_URL:-}" ]; then
+    ENV_PAYMENT="$PROJECT_ROOT/gym/.env.payment"
+    if [ -f "$ENV_PAYMENT" ]; then
+        set -a
+        source <(grep '^PAYMENT_CORE_DB_URL' "$ENV_PAYMENT" | sed 's/\r$//')
+        set +a
+    else
+        echo "⚠️  gym/.env.payment no encontrado — los tests pueden fallar si PAYMENT_CORE_DB_URL no está seteada"
+    fi
+fi
+# vitest.config.ts hace fallback entre PAYMENT_CORE_DB_URL y DATABASE_URL — reflejamos si falta.
+if [ -z "${DATABASE_URL:-}" ] && [ -n "${PAYMENT_CORE_DB_URL:-}" ]; then
+    export DATABASE_URL="$PAYMENT_CORE_DB_URL"
+fi
 
 # 3. Ejecutar tests (fail-fast: si fallan, no commitear el bump)
 # NOTA: npm publish vuelve a correr tests via prepublishOnly — es intencional
