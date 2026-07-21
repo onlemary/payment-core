@@ -39,6 +39,25 @@ function cn(...classes: (string | undefined | false)[]) {
 }
 
 /**
+ * Theme-aware colors.
+ *
+ * payment-core is a standalone published package whose classes are NOT scanned
+ * by the host's Tailwind, so utility classes like `bg-muted` won't be generated.
+ * Instead we use inline CSS vars (with fallbacks): the host (e.g. the gym) defines
+ * these vars and flips them in dark mode; the fallbacks keep standalone usage
+ * looking right.
+ */
+const COLOR = {
+  background: 'hsl(var(--background, 0 0% 100%))',
+  foreground: 'hsl(var(--foreground, 222.2 84% 4.9%))',
+  muted: 'hsl(var(--muted, 210 40% 96.1%))',
+  mutedForeground: 'hsl(var(--muted-foreground, 215.4 16.3% 46.9%))',
+  accent: 'hsl(var(--accent, 210 40% 96.1%))',
+  accentForeground: 'hsl(var(--accent-foreground, 222.2 47.4% 11.2%))',
+  border: 'hsl(var(--border, 214.3 31.8% 91.4%))',
+}
+
+/**
  * Default currency formatter
  */
 function defaultFormatCurrency(amount: number, currency: string): string {
@@ -86,7 +105,7 @@ export function PaymentMethodModal({
           <IconComponent className="h-5 w-5" aria-hidden="true" />
           {method.name}
         </h2>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm" style={{ color: COLOR.mutedForeground }}>
           {method.requiresVerification 
             ? 'El gimnasio verificará tu pago'
             : 'Confirmá tu pago'
@@ -102,18 +121,18 @@ export function PaymentMethodModal({
           style={{ 
             backgroundColor: primaryColor 
               ? `color-mix(in srgb, ${primaryColor} 10%, transparent)` 
-              : '#f3f4f6' 
+              : COLOR.muted 
           }}
         >
-          <p className="text-sm text-gray-500">Monto a pagar</p>
+          <p className="text-sm" style={{ color: COLOR.mutedForeground }}>Monto a pagar</p>
           <p 
             className="text-3xl font-bold" 
-            style={{ color: primaryColor || '#111827' }}
+            style={{ color: primaryColor || COLOR.foreground }}
           >
             {defaultFormatCurrency(amount, currency)}
           </p>
           {invoiceCount && invoiceCount > 1 && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs mt-1" style={{ color: COLOR.mutedForeground }}>
               {invoiceCount} factura{invoiceCount !== 1 ? 's' : ''}
             </p>
           )}
@@ -125,27 +144,27 @@ export function PaymentMethodModal({
             <p className="text-sm font-medium text-center">Datos para transferencia</p>
             
             {bankData.bankName && (
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: COLOR.muted }}>
                 <div>
-                  <p className="text-xs text-gray-500">Banco</p>
+                  <p className="text-xs" style={{ color: COLOR.mutedForeground }}>Banco</p>
                   <p className="font-medium">{bankData.bankName}</p>
                 </div>
               </div>
             )}
 
             {bankData.bankAccountHolder && (
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: COLOR.muted }}>
                 <div>
-                  <p className="text-xs text-gray-500">Titular</p>
+                  <p className="text-xs" style={{ color: COLOR.mutedForeground }}>Titular</p>
                   <p className="font-medium">{bankData.bankAccountHolder}</p>
                 </div>
               </div>
             )}
 
             {bankData.bankCbu && (
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: COLOR.muted }}>
                 <div>
-                  <p className="text-xs text-gray-500">CBU</p>
+                  <p className="text-xs" style={{ color: COLOR.mutedForeground }}>CBU</p>
                   <p className="font-mono text-sm">{bankData.bankCbu}</p>
                 </div>
                 <button
@@ -163,9 +182,9 @@ export function PaymentMethodModal({
             )}
 
             {bankData.bankAlias && (
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: COLOR.muted }}>
                 <div>
-                  <p className="text-xs text-gray-500">Alias</p>
+                  <p className="text-xs" style={{ color: COLOR.mutedForeground }}>Alias</p>
                   <p className="font-mono">{bankData.bankAlias}</p>
                 </div>
                 <button
@@ -186,7 +205,14 @@ export function PaymentMethodModal({
 
         {/* Instructions */}
         {!isBankTransfer && method.instructions && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800 text-sm">
+          <div
+            className="border rounded-lg p-4 text-sm"
+            style={{
+              backgroundColor: COLOR.accent,
+              borderColor: COLOR.border,
+              color: COLOR.accentForeground,
+            }}
+          >
             <p className="font-medium mb-1">Instrucciones:</p>
             <p>{method.instructions}</p>
           </div>
@@ -194,8 +220,8 @@ export function PaymentMethodModal({
 
         {/* Generic instructions for methods without specific instructions */}
         {!isBankTransfer && !method.instructions && (
-          <div className="bg-gray-50 rounded-lg p-4 text-sm text-center">
-            <p className="text-gray-500">
+          <div className="rounded-lg p-4 text-sm text-center" style={{ backgroundColor: COLOR.muted }}>
+            <p style={{ color: COLOR.mutedForeground }}>
               {emptyInstructionsMessage}
             </p>
           </div>
@@ -242,7 +268,12 @@ export function PaymentMethodModal({
             )}
           </button>
           <button
-            className="w-full h-12 border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            className="w-full h-12 border inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            style={{
+              backgroundColor: COLOR.background,
+              color: COLOR.foreground,
+              borderColor: COLOR.border,
+            }}
             onClick={onClose}
             disabled={isLoading}
             aria-label="Cancelar"

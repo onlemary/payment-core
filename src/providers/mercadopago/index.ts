@@ -12,7 +12,9 @@ import type {
  WebhookPayload,
  MercadoPagoAPI,
  Logger,
+ RecurringCharge,
 } from '../../types.js'
+import { searchAuthorizedPayments } from './preapprovals/get-payment.js'
 import type { PaymentProvider, ProviderConfig } from '../types.js'
 import type { TokenStorage } from '../../storage/types.js'
 import { getErrorMessage } from '../../errors/get-error-message.js'
@@ -186,6 +188,30 @@ export default class MercadoPagoProvider implements PaymentProvider {
  errorCode: 'UNSUPPORTED_OPERATION',
  provider: this.name,
  }
+ }
+
+ // ─── Recurring Reconciliation ────────────────────────────────
+
+ /**
+  * List the recurring charges MP generated for a preapproval, normalized to
+  * the provider-agnostic RecurringCharge shape. Wraps the existing
+  * /authorized_payments/search endpoint. `transaction_amount` already comes
+  * back in cents from searchAuthorizedPayments.
+  */
+ async listRecurringCharges(
+  subscriptionId: string,
+  opts?: { status?: string; limit?: number; offset?: number }
+ ): Promise<RecurringCharge[]> {
+  const { results } = await searchAuthorizedPayments(this.accessToken, subscriptionId, opts)
+  return results.map((p) => ({
+   externalPaymentId: p.id,
+   subscriptionId: p.preapproval_id || subscriptionId,
+   status: p.status,
+   amountCents: p.transaction_amount,
+   currency: p.currency_id,
+   chargedAt: new Date(p.date_approved ?? p.date_created),
+   raw: p,
+  }))
  }
 
  // ─── Webhooks ────────────────────────────────────────────────

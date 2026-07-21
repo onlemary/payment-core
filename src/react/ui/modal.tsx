@@ -93,7 +93,14 @@ export function Modal({
       aria-labelledby={labelledBy}
     >
       <div
-        className={cn('bg-white rounded-lg shadow-xl', className)}
+        className={cn('rounded-lg shadow-xl', className)}
+        style={{
+          // payment-core is standalone and NOT scanned by the host's Tailwind,
+          // so theme-aware colors use inline CSS vars (with fallbacks). The host
+          // (e.g. the gym) defines these vars and flips them in dark mode.
+          backgroundColor: 'hsl(var(--background, 0 0% 100%))',
+          color: 'hsl(var(--foreground, 222.2 84% 4.9%))',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

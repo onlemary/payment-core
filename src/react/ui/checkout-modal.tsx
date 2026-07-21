@@ -24,6 +24,21 @@ import { PaymentStatusBadge } from './payment-status-badge'
 import { Modal } from './modal.js'
 import type { CheckoutSession } from '../checkout/types'
 
+/**
+ * Theme-aware colors.
+ *
+ * payment-core is a standalone published package whose classes are NOT scanned
+ * by the host's Tailwind, so utility classes like `text-muted-foreground` won't
+ * be generated. Instead we use inline CSS vars (with fallbacks): the host defines
+ * these vars and flips them in dark mode; the fallbacks keep standalone usage
+ * looking right. Semantic status colors (green/red/orange, blue spinner) stay as
+ * fixed classes because they carry meaning regardless of theme.
+ */
+const COLOR = {
+  mutedForeground: 'hsl(var(--muted-foreground, 215.4 16.3% 46.9%))',
+  border: 'hsl(var(--border, 214.3 31.8% 91.4%))',
+}
+
 export interface CheckoutModalProps {
   /** Current checkout session */
   session: CheckoutSession
@@ -90,7 +105,7 @@ export function CheckoutModal({
             <h3 className="text-2xl font-bold text-green-600 mb-2">
               ¡Pago exitoso!
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="mb-4" style={{ color: COLOR.mutedForeground }}>
               Tu pago ha sido procesado correctamente.
             </p>
             <PaymentStatusBadge status="completed" size="lg" />
@@ -106,7 +121,7 @@ export function CheckoutModal({
             <h3 className="text-2xl font-bold text-red-600 mb-2">
               Pago fallido
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="mb-4" style={{ color: COLOR.mutedForeground }}>
               {session.error || 'Hubo un error al procesar el pago. Por favor, intentá de nuevo.'}
             </p>
             <PaymentStatusBadge status="failed" size="lg" />
@@ -122,7 +137,7 @@ export function CheckoutModal({
             <h3 className="text-2xl font-bold text-orange-600 mb-2">
               Pago expirado
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="mb-4" style={{ color: COLOR.mutedForeground }}>
               El tiempo para realizar el pago ha expirado. Por favor, generá un nuevo código.
             </p>
             <PaymentStatusBadge status="expired" size="lg" />
@@ -133,10 +148,10 @@ export function CheckoutModal({
         return (
           <div className="text-center py-8">
             <div className="text-6xl mb-4" role="img" aria-label="Cancelled">✗</div>
-            <h3 className="text-2xl font-bold text-gray-600 mb-2">
+            <h3 className="text-2xl font-bold mb-2" style={{ color: COLOR.mutedForeground }}>
               Pago cancelado
             </h3>
-            <p className="text-gray-600">
+            <p style={{ color: COLOR.mutedForeground }}>
               El pago ha sido cancelado.
             </p>
           </div>
@@ -152,13 +167,13 @@ export function CheckoutModal({
                 <h3 className="text-xl font-semibold mb-2">
                   Escaneá el código QR para pagar
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="mb-4" style={{ color: COLOR.mutedForeground }}>
                   Usá la app de tu banco o billetera digital
                 </p>
 
                 {session.qrData.expiresAt && (
                   <div className="mb-4">
-                    <p className="text-sm text-gray-500 mb-1">Tiempo restante:</p>
+                    <p className="text-sm mb-1" style={{ color: COLOR.mutedForeground }}>Tiempo restante:</p>
                     <CountdownTimer
                       expiresAt={session.qrData.expiresAt}
                       size="lg"
@@ -188,7 +203,7 @@ export function CheckoutModal({
               <h3 className="text-xl font-semibold mb-2">
                 Procesando pago
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="mb-4" style={{ color: COLOR.mutedForeground }}>
                 Tarjeta terminada en {session.cardData.lastDigits}
               </p>
               <div className="mt-4">
@@ -203,7 +218,7 @@ export function CheckoutModal({
         return (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600">Procesando...</p>
+            <p style={{ color: COLOR.mutedForeground }}>Procesando...</p>
           </div>
         )
 
@@ -224,14 +239,15 @@ export function CheckoutModal({
       closeOnEscape={false}
     >
       {/* Header */}
-      <div className="flex justify-between items-center p-6 border-b">
+      <div className="flex justify-between items-center p-6 border-b" style={{ borderColor: COLOR.border }}>
         <h2 id="checkout-modal-title" className="text-2xl font-bold">
           {title}
         </h2>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none p-1"
+            className="text-2xl leading-none p-1"
+            style={{ color: COLOR.mutedForeground }}
             aria-label="Cerrar modal"
           >
             ×
@@ -245,11 +261,12 @@ export function CheckoutModal({
       </div>
 
       {/* Footer */}
-      <div className="flex justify-end gap-2 p-6 border-t">
+      <div className="flex justify-end gap-2 p-6 border-t" style={{ borderColor: COLOR.border }}>
         {onClose && (
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
+            className="px-4 py-2 transition"
+            style={{ color: COLOR.mutedForeground }}
           >
             Cerrar
           </button>

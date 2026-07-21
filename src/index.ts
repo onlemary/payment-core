@@ -29,6 +29,7 @@ export { UniversalPayments } from './universal/payments.js'
 export { UniversalRefunds } from './universal/refunds.js'
 export { UniversalCaptures } from './universal/captures.js'
 export { UniversalVoids } from './universal/voids.js'
+export { UniversalReconciler } from './universal/reconciler.js'
 
 // Webhooks
 export { detectProvider } from './webhooks/detect.js'
@@ -148,6 +149,11 @@ export type {
   CaptureResult,
   VoidResult,
 
+  // Recurring reconciliation
+  RecurringCharge,
+  ReconcileResult,
+  ReconcileOptions,
+
   // Webhooks
   WebhookPayload,
   WebhookCallbacks,
@@ -226,4 +232,5 @@ export type {
   UniversalRefunds as IUniversalRefunds,
   UniversalCaptures as IUniversalCaptures,
   UniversalVoids as IUniversalVoids,
+  UniversalReconciler as IUniversalReconciler,
 } from './types.js'

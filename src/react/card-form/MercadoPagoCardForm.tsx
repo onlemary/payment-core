@@ -285,7 +285,7 @@ export function MercadoPagoCardForm({
         </div>
 
         {/* Expiration and CVV */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label htmlFor="form-checkout__expirationDate" className="block text-xs font-medium text-foreground">
               Vencimiento
@@ -310,7 +310,7 @@ export function MercadoPagoCardForm({
             type="text"
             id="form-checkout__cardholderName"
             placeholder="Nombre en la tarjeta"
-            className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            className="mp-native-input"
           />
         </div>
 
@@ -323,19 +323,19 @@ export function MercadoPagoCardForm({
             type="email"
             id="form-checkout__cardholderEmail"
             placeholder="tu@email.com"
-            className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            className="mp-native-input"
           />
         </div>
 
         {/* Identification */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label htmlFor="form-checkout__identificationType" className="block text-xs font-medium text-foreground">
               Documento
             </label>
             <select
               id="form-checkout__identificationType"
-              className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
+              className="mp-native-input appearance-none cursor-pointer"
             ></select>
           </div>
 
@@ -347,20 +347,20 @@ export function MercadoPagoCardForm({
               type="text"
               id="form-checkout__identificationNumber"
               placeholder="12345678"
-              className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className="mp-native-input"
             />
           </div>
         </div>
 
         {/* Issuer and Installments */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label htmlFor="form-checkout__issuer" className="block text-xs font-medium text-foreground">
               Banco
             </label>
             <select
               id="form-checkout__issuer"
-              className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
+              className="mp-native-input appearance-none cursor-pointer"
             ></select>
           </div>
 
@@ -370,7 +370,7 @@ export function MercadoPagoCardForm({
             </label>
             <select
               id="form-checkout__installments"
-              className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
+              className="mp-native-input appearance-none cursor-pointer"
             ></select>
           </div>
         </div>
@@ -405,31 +405,64 @@ export function MercadoPagoCardForm({
         <span>Pago seguro con MercadoPago</span>
       </div>
       
-      {/* Inline styles for MercadoPago iframes */}
+      {/* Inline styles for MercadoPago iframes + native inputs (altura unificada 40px, estándar) */}
       <style dangerouslySetInnerHTML={{
         __html: `
-          .mp-input {
-            min-height: 32px;
+          /* Altura estándar unificada para TODOS los campos (iframes MP + inputs nativos) */
+          #mp-card-form .mp-input,
+          #mp-card-form .mp-native-input {
+            height: 40px;
+            width: 100%;
+            box-sizing: border-box;
           }
-          
-          #mp-card-form iframe {
+
+          /* Contenedor del iframe de MP: borde + fondo (el iframe interno es transparente).
+             Sin padding horizontal: el iframe llena de borde a borde y MP ya aplica su
+             propio padding de texto interno (evita clipping por doble padding). */
+          #mp-card-form .mp-input {
+            display: block;
             border: 1px solid hsl(var(--input));
             border-radius: 0.375rem;
-            padding: 0.375rem 0.625rem;
             background: hsl(var(--background));
-            transition: all 0.2s;
-            width: 100%;
-            min-height: 32px;
-            font-size: 0.875rem;
+            padding: 0 0.5rem;
+            transition: box-shadow 0.15s, border-color 0.15s;
+            overflow: hidden;
           }
-          
-          #mp-card-form iframe:focus-within {
-            outline: none;
-            box-shadow: 0 0 0 2px hsl(var(--primary));
+
+          #mp-card-form .mp-input:focus-within {
             border-color: transparent;
+            box-shadow: 0 0 0 2px hsl(var(--primary));
           }
-          
-          #mp-card-form select {
+
+          /* El iframe de MP ocupa todo el alto del contenedor, sin borde/padding propios.
+             !important porque el SDK de MP setea height/width inline en el iframe. */
+          #mp-card-form .mp-input iframe {
+            height: 100% !important;
+            width: 100% !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            display: block;
+          }
+
+          /* Inputs y selects nativos: mismo look que los campos de MP */
+          #mp-card-form .mp-native-input {
+            padding: 0 0.75rem;
+            font-size: 0.875rem;
+            border: 1px solid hsl(var(--input));
+            border-radius: 0.375rem;
+            background: hsl(var(--background));
+            transition: box-shadow 0.15s, border-color 0.15s;
+          }
+
+          #mp-card-form .mp-native-input:focus {
+            outline: none;
+            border-color: transparent;
+            box-shadow: 0 0 0 2px hsl(var(--primary));
+          }
+
+          #mp-card-form select.mp-native-input {
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
             background-position: right 0.5rem center;
             background-repeat: no-repeat;

@@ -125,6 +125,25 @@ export async function POST(request: NextRequest) {
 - **Storage adapters**: Prisma, Drizzle, Supabase support
 - **Route handlers**: Framework-agnostic API route builders
 
+## Payment Flows: cobro único vs. débito automático
+
+Hay **dos flujos** y se comportan distinto respecto al webhook. Entender esto evita confusiones (ej. "¿por qué no llegó un webhook?").
+
+| | **Pago con tarjeta (cobro único)** | **Débito automático (preapproval)** |
+|---|---|---|
+| **Cuándo cobra** | Ahora, una sola vez | Ahora se autoriza; el cobro ocurre después (recurrente) |
+| **Naturaleza** | Síncrono | Asíncrono |
+| **¿Espera webhook?** | **No** | **Sí** |
+| **Fuente de verdad** | La respuesta directa del proveedor | El webhook |
+
+**Pago con tarjeta (síncrono):** el cobro se resuelve en la misma llamada — se pide la aprobación y el proveedor responde `approved`/`rejected` al instante, y ahí mismo se marca la factura. No se registra un webhook porque el proveedor no necesita avisar nada después.
+
+**Débito automático (asíncrono):** hoy solo se **autoriza** la suscripción; los cobros reales pasan solos en el futuro. Como nadie está mirando en ese momento, el proveedor **avisa por webhook** cada cobro. Aquí sí llegan (y se esperan) webhooks.
+
+**El "quién llega primero":** en el flujo asíncrono la respuesta directa y el webhook pueden llegar en cualquier orden. Por eso todo es **idempotente**: gane quien gane la carrera, el resultado es el mismo y nada se cobra/registra dos veces.
+
+> Consecuencia práctica: **simular un webhook solo tiene efecto en el flujo de débito automático.** Un pago con tarjeta único no "engancha" un webhook porque ese flujo no lo usa.
+
 ## Environment Variables
 
 ### Required
