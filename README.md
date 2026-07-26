@@ -2,6 +2,22 @@
 
 Multi-gateway payment processing package with unified abstraction for MercadoPago, Stripe, PayPal, and more.
 
+## Repository
+
+- **Repo**: <https://github.com/onlemary/payment-core>.
+- **Standalone-repo migration**: 2026-07-26 — pre-existing local history (40
+  commits) was pushed as-is to the GitHub remote on that date. The
+  `package.json.repository.url` field predates the migration.
+- **Branch canonical name**: `main` (renombrado de `master` in the same
+  migration; no other clones were affected).
+
+```bash
+# Quick reference (see ./publish.sh + ./dev-publish.sh for full workflow).
+cd packages/payment-core
+bash dev-publish.sh patch   # bump + test + publish + install
+git push origin main        # mirror bumps to GitHub
+```
+
 ## Installation
 
 ```bash
