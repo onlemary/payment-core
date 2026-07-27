@@ -74,7 +74,7 @@ export class MagicLinkStorage {
         return { consumed: false, reason: 'expired' }
       }
       return { consumed: true, link: toRecord(row) }
-    } catch (err) {
+    } catch (err: any) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
         return { consumed: false, reason: 'not_found' }
       }
