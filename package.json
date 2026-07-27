@@ -1,6 +1,6 @@
 {
   "name": "@onlemary/payment-core",
-  "version": "0.6.22",
+  "version": "0.6.23",
   "description": "Multi-gateway payment processing package with unified abstraction for MercadoPago, Stripe, PayPal, and more",
   "type": "module",
   "main": "./dist/index.js",
@@ -190,14 +190,14 @@
   "devDependencies": {
     "@testing-library/react": "^14.0.0",
     "@types/node": "^22.0.0",
-    "@types/react": "^18.0.0",
+    "@types/react": "^19.0.0",
     "@vitest/coverage-v8": "^2.1.9",
     "fast-check": "^3.0.0",
     "happy-dom": "^20.9.0",
     "jsdom": "^29.1.0",
     "lucide-react": "^1.14.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "typescript": "^5.0.0",
     "vitest": "^2.0.0"
   },
