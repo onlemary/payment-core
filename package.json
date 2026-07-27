@@ -1,6 +1,6 @@
 {
   "name": "@onlemary/payment-core",
-  "version": "0.6.27",
+  "version": "0.6.28",
   "description": "Multi-gateway payment processing package with unified abstraction for MercadoPago, Stripe, PayPal, and more",
   "type": "module",
   "main": "./dist/index.js",
@@ -179,7 +179,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "mercadopago": "^2.0.0",
-    "pg": "^8.21.0",
+    "pg": "^8.20.0",
     "prisma": "^7.8.0",
     "stripe": "^14.0.0"
   },
