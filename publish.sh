@@ -87,6 +87,16 @@ if ! git diff --quiet package.json 2>/dev/null; then
     fi
 fi
 
+# Guard anti-self-ref: el paquete NO puede listarse a sí mismo en ningún
+# bloque de dependencies. Bug observado en payment-core 0.6.27 (npm
+# version patch autoagregó "@onlemary/payment-core: ^0.6.28" en
+# dependencies, rompiendo instalación circular en consumidores).
+# Lógica en scripts/guard.cjs (CommonJS — payment-core es ESM, .cjs
+# fuerza el modo correcto). Test en scripts/test-publish-guard.sh.
+if ! node "$SCRIPT_DIR/scripts/guard.cjs" 2>&1; then
+    exit 1
+fi
+
 # Leer versión actual (ya bumpeada por dev-publish.sh)
 NEW_VERSION=$(node -p "require('./package.json').version")
 echo "📦 Publicando versión: $NEW_VERSION"
